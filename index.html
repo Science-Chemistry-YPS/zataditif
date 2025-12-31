@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zat Aditif dan Adiktif</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Menambahkan Library jsPDF untuk generate PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI', sans-serif;
+    }
+    
+    .rainbow-bg {
+      background: linear-gradient(-45deg, #FF9A9E, #FECFEF, #A18CD1, #FBC2EB, #8EC5FC, #E0C3FC);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .stage-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    
+    .stage-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border-color: #FBC2EB;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .word-card {
+      animation: slideIn 0.3s ease-out;
+      border: 4px solid white;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    @keyframes slideIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .tic-tac-cell {
+      transition: all 0.2s;
+      background: white;
+      box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    }
+    
+    .tic-tac-cell:hover:not(.answered) {
+      transform: scale(1.05);
+      background: #FFF9C4;
+      border-color: #FFD54F;
+      z-index: 10;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .correct-answer {
+      background: #69F0AE !important;
+      color: #00695C;
+      animation: correctPulse 0.5s;
+    }
+    
+    .wrong-answer {
+      background: #FF5252 !important;
+      color: white;
+      animation: shake 0.5s;
+    }
+    
+    @keyframes correctPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    .btn-gradient-primary {
+      background: linear-gradient(to right, #FF4081, #F50057);
+      box-shadow: 0 4px 15px rgba(245, 0, 87, 0.3);
+    }
+    .btn-gradient-primary:hover {
+      background: linear-gradient(to right, #F50057, #C51162);
+      transform: translateY(-2px);
+    }
+
+    .btn-gradient-secondary {
+      background: linear-gradient(to right, #00BCD4, #0097A7);
+      box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    }
+
+    .btn-gradient-accent {
+      background: linear-gradient(to right, #FFD740, #FFC400);
+      color: #3E2723;
+      box-shadow: 0 4px 15px rgba(255, 215, 64, 0.3);
+    }
+
+    #sound-control {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      cursor: pointer;
+      font-size: 1.5rem;
+      transition: transform 0.2s;
+    }
+    #sound-control:hover {
+      transform: scale(1.1);
+    }
+
+    /* TOMBOL SIMPULKAN */
+    #summary-btn {
+      position: fixed;
+      top: 85px; /* Di bawah tombol sound */
+      right: 20px;
+      z-index: 100;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s;
+      border: 2px solid white;
+    }
+    #summary-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* TOMBOL KAMERA (KIRI ATAS) */
+    #camera-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      cursor: pointer;
+      font-size: 1.5rem;
+      transition: transform 0.2s;
+    }
+    #camera-btn:hover {
+      transform: scale(1.1) rotate(10deg);
+    }
+
+    /* TOMBOL AI (KANAN BAWAH) */
+    #ai-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-size: 2rem;
+      transition: transform 0.2s;
+      border: 4px solid #3b82f6; /* Blue border */
+    }
+    #ai-btn:hover {
+      transform: scale(1.1) rotate(-10deg);
+    }
+
+    /* STYLES FOR FLIP CARD */
+    .flip-container {
+      perspective: 1000px;
+    }
+    .flip-card {
+      width: 100%;
+      height: 250px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+      cursor: pointer;
+    }
+    .flip-card.flipped {
+      transform: rotateY(180deg);
+    }
+    .flip-front, .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .flip-front {
+      background: white;
+      color: #1f2937;
+      border: 4px solid #60a5fa;
+    }
+    .flip-back {
+      background: linear-gradient(to bottom right, #3b82f6, #2563eb);
+      color: white;
+      transform: rotateY(180deg);
+      border: 4px solid white;
+    }
+    
+    .materi-card {
+        transition: all 0.3s ease;
+    }
+    .materi-card:hover {
+        transform: translateY(-5px);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full">
+  <button id="sound-control" onclick="toggleSound()" title="Matikan/Hidupkan Suara">🔊</button>
+  <button id="summary-btn" onclick="toggleSummaryModal()" title="Simpulkan Pembelajaran">🧠 Simpulkan</button>
+  <!-- TOMBOL KAMERA -->
+  <button id="camera-btn" onclick="openCameraModal()" title="Foto Ekspresi Belajar">📷</button>
+  <!-- TOMBOL AI MINI -->
+  <button id="ai-btn" onclick="toggleAiModal()" title="Tanya AI Mini">🤖</button>
+
+  <!-- MODAL KAMERA -->
+  <div id="camera-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeCameraModal()"></div>
+    <div class="relative bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md flex flex-col items-center">
+        <button onclick="closeCameraModal()" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 text-2xl font-bold">×</button>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">📸 Foto Ekspresi Kamu</h2>
+        
+        <div class="relative w-full aspect-[4/3] bg-black rounded-xl overflow-hidden mb-4 border-4 border-gray-200 shadow-inner">
+            <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover transform -scale-x-100"></video>
+            <img id="camera-result" class="hidden w-full h-full object-cover transform -scale-x-100" alt="Hasil Foto">
+            <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+
+        <div id="camera-controls" class="flex gap-4 w-full justify-center">
+            <button onclick="takeSnapshot()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
+                <span>🔘</span> Ambil Foto
+            </button>
+        </div>
+
+        <div id="result-controls" class="hidden flex gap-4 w-full justify-center">
+            <button onclick="retakePhoto()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">
+                🔄 Ulangi
+            </button>
+            <a id="download-link" href="#" download="ekspresi-belajar.png" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
+                📥 Download
+            </a>
+        </div>
+        <p class="text-xs text-gray-500 mt-4 text-center">Pastikan izinkan akses kamera di browser.</p>
+    </div>
+  </div>
+
+  <!-- MODAL AI -->
+  <div id="ai-modal" class="hidden fixed inset-0 z-[200] flex items-end sm:items-center justify-end sm:justify-center px-4 pb-4 sm:p-0 pointer-events-none">
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-[1px] transition-opacity pointer-events-auto" onclick="toggleAiModal()"></div>
+    <div class="relative bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm h-[500px] flex flex-col pointer-events-auto border-4 border-blue-200">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🤖</span>
+                <h3 class="font-bold text-gray-800">AI Mini Assistant</h3>
+            </div>
+            <button onclick="toggleAiModal()" class="text-gray-400 hover:text-red-500 text-xl font-bold">×</button>
+        </div>
+        
+        <!-- Chat Area -->
+        <div id="ai-chat-box" class="flex-grow overflow-y-auto mb-4 space-y-3 p-2 bg-gray-50 rounded-lg">
+            <div class="flex items-start gap-2">
+                <div class="bg-blue-100 p-2 rounded-lg rounded-tl-none text-sm text-gray-700">
+                    Halo! Saya AI Mini. Ada yang bisa saya bantu tentang Zat Aditif atau Adiktif?
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex gap-2">
+            <input type="text" id="ai-input" class="flex-grow border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Ketik pertanyaan... (misal: MSG, Rokok)">
+            <button onclick="handleAiChat()" class="bg-blue-500 text-white rounded-full p-2 px-3 hover:bg-blue-600 transition shadow-md">
+                ➤
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL SUMMARY (FLIP CARDS) -->
+  <div id="summary-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="toggleSummaryModal()"></div>
+    <div class="relative bg-white/95 p-8 rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-auto flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-bold text-blue-800">🧠 Refleksi & Kesimpulan Hari Ini</h2>
+            <button onclick="toggleSummaryModal()" class="text-gray-500 hover:text-red-500 text-3xl font-bold">×</button>
+        </div>
+        <p class="text-center text-gray-600 mb-8 text-lg">Klik kartu untuk membalik dan melihat kunci kesimpulan!</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 flex-grow">
+            
+            <!-- Card 1 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">🤔</div>
+                            <h3 class="text-xl font-bold">Apa perbedaan inti zat Aditif dan Adiktif?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg"><strong>Aditif:</strong> Bahan tambahan pangan (pewarna, pengawet) untuk kualitas makanan.<br><br><strong>Adiktif:</strong> Zat yang menyebabkan kecanduan/ketergantungan (rokok, narkoba).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">🌿 vs 🧪</div>
+                            <h3 class="text-xl font-bold">Mengapa zat aditif alami lebih disarankan?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg">Karena lebih <strong>aman bagi kesehatan</strong>, mudah dicerna tubuh, dan mengandung nutrisi, meskipun warnanya mungkin tidak semencolok zat buatan.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">☠️</div>
+                            <h3 class="text-xl font-bold">Apa bahaya terbesar penyalahgunaan Zat Adiktif?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg">Merusak <strong>sistem saraf pusat</strong> (otak), menyebabkan kerusakan organ vital, ketergantungan fisik/mental, hingga kematian (overdosis).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">🛡️</div>
+                            <h3 class="text-xl font-bold">Bagaimana sikap kita terhadap Narkoba?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg text-yellow-300 font-bold">KATAKAN TIDAK PADA NARKOBA!</p>
+                            <p class="mt-2">Pilih pergaulan positif, dekatkan diri pada agama, dan fokus pada prestasi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+  </div>
+
+  <div id="app" class="h-full w-full overflow-auto rainbow-bg"></div>
+  <script>
+    // --- SOUND MANAGER (Web Audio API) ---
+    const SoundManager = {
+      audioCtx: null,
+      isMuted: false,
+
+      init() {
+        if (!this.audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.audioCtx = new AudioContext();
+          }
+        }
+      },
+
+      playTone(freq, type, duration, startTime = 0, vol = 0.1) {
+        if (this.isMuted || !this.audioCtx) return;
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+        const osc = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime + startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + startTime + duration);
+        osc.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+        osc.start(this.audioCtx.currentTime + startTime);
+        osc.stop(this.audioCtx.currentTime + startTime + duration);
+      },
+
+      playClick() { this.playTone(600, 'sine', 0.1, 0, 0.05); },
+      playTick() { this.playTone(800, 'triangle', 0.05, 0, 0.05); },
+      playCorrect() { this.playTone(523.25, 'sine', 0.1, 0, 0.1); this.playTone(659.25, 'sine', 0.3, 0.1, 0.1); },
+      playWrong() { this.playTone(150, 'sawtooth', 0.3, 0, 0.1); this.playTone(100, 'sawtooth', 0.3, 0.1, 0.1); },
+      playWin() {
+        const now = 0;
+        this.playTone(523.25, 'square', 0.1, now, 0.1);
+        this.playTone(659.25, 'square', 0.1, now + 0.1, 0.1);
+        this.playTone(783.99, 'square', 0.1, now + 0.2, 0.1);
+        this.playTone(1046.50, 'square', 0.4, now + 0.3, 0.1);
+      }
+    };
+
+    function toggleSound() {
+      SoundManager.isMuted = !SoundManager.isMuted;
+      const btn = document.getElementById('sound-control');
+      btn.textContent = SoundManager.isMuted ? '🔇' : '🔊';
+      if (!SoundManager.isMuted) SoundManager.init();
+    }
+
+    function toggleSummaryModal() {
+        SoundManager.playClick();
+        const modal = document.getElementById('summary-modal');
+        modal.classList.toggle('hidden');
+        
+        // Reset flipped cards when closing
+        if (modal.classList.contains('hidden')) {
+            document.querySelectorAll('.flip-card').forEach(card => card.classList.remove('flipped'));
+        }
+    }
+
+    // --- AI MINI LOGIC ---
+    function toggleAiModal() {
+        SoundManager.playClick();
+        const modal = document.getElementById('ai-modal');
+        modal.classList.toggle('hidden');
+        if (!modal.classList.contains('hidden')) {
+            document.getElementById('ai-input').focus();
+        }
+    }
+
+    function handleAiChat() {
+        const input = document.getElementById('ai-input');
+        const chatBox = document.getElementById('ai-chat-box');
+        const text = input.value.trim().toLowerCase();
+        
+        if (!text) return;
+
+        // User Message
+        chatBox.innerHTML += `
+            <div class="flex items-center justify-end gap-2">
+                <div class="bg-green-100 p-2 rounded-lg rounded-tr-none text-sm text-gray-700 text-right">
+                    ${input.value}
+                </div>
+            </div>
+        `;
+        
+        input.value = '';
+        SoundManager.playClick(); 
+
+        // Simple Logic for AI Response based on database
+        let response = "Maaf, saya tidak mengerti. Coba ketik nama zat seperti 'MSG', 'Rokok', atau 'Pewarna'.";
+        
+        // Search in databaseZat
+        const foundKey = Object.keys(databaseZat).find(k => 
+            k.toLowerCase() === text || 
+            k.toLowerCase().includes(text) || 
+            (databaseZat[k].keywords && databaseZat[k].keywords.some(kw => text.includes(kw)))
+        );
+        
+        if (foundKey) {
+            const data = databaseZat[foundKey];
+            response = `<strong>${foundKey}</strong> adalah ${data.kategori}. <br><strong>Fungsi/Efek:</strong> ${data.fungsi}.`;
+        } else if (text.includes('halo') || text.includes('hai')) {
+            response = "Halo! Silakan tanya tentang zat aditif (seperti MSG, Tartrazin) atau adiktif (seperti Kopi, Rokok).";
+        } else if (text.includes('siapa kamu')) {
+            response = "Saya AI Mini, asisten cerdas untuk membantumu belajar!";
+        } else if (text.includes('terima kasih') || text.includes('makasih')) {
+            response = "Sama-sama! Semangat belajarnya ya! 🚀";
+        }
+
+        // AI Message (Delayed slightly)
+        setTimeout(() => {
+            chatBox.innerHTML += `
+                <div class="flex items-start gap-2">
+                    <div class="bg-blue-100 p-2 rounded-lg rounded-tl-none text-sm text-gray-700">
+                        ${response}
+                    </div>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            SoundManager.playTick(); 
+        }, 500);
+    }
+
+    // Enter key support for AI chat
+    document.getElementById('ai-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleAiChat();
+        }
+    });
+
+    // --- KAMERA LOGIC ---
+    let cameraStream = null;
+
+    async function openCameraModal() {
+        SoundManager.playClick();
+        const modal = document.getElementById('camera-modal');
+        const video = document.getElementById('camera-stream');
+        const img = document.getElementById('camera-result');
+        const btnControls = document.getElementById('camera-controls');
+        const resControls = document.getElementById('result-controls');
+
+        modal.classList.remove('hidden');
+        img.classList.add('hidden');
+        video.classList.remove('hidden');
+        btnControls.classList.remove('hidden');
+        resControls.classList.add('hidden');
+
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = cameraStream;
+        } catch (err) {
+            console.error("Gagal akses kamera:", err);
+            alert("Tidak dapat mengakses kamera. Pastikan Anda mengizinkan akses kamera di browser.");
+            closeCameraModal();
+        }
+    }
+
+    function closeCameraModal() {
+        const modal = document.getElementById('camera-modal');
+        modal.classList.add('hidden');
+        
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+    }
+
+    function takeSnapshot() {
+        SoundManager.playClick();
+        const video = document.getElementById('camera-stream');
+        const canvas = document.getElementById('camera-canvas');
+        const img = document.getElementById('camera-result');
+        const btnControls = document.getElementById('camera-controls');
+        const resControls = document.getElementById('result-controls');
+        const downloadLink = document.getElementById('download-link');
+
+        // Set canvas size match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw video to canvas
+        const ctx = canvas.getContext('2d');
+        // Mirror effect for canvas drawing
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert to data URL
+        const dataURL = canvas.toDataURL('image/png');
+        img.src = dataURL;
+        downloadLink.href = dataURL;
+
+        // UI Updates
+        video.classList.add('hidden');
+        img.classList.remove('hidden');
+        btnControls.classList.add('hidden');
+        resControls.classList.remove('hidden');
+    }
+
+    function retakePhoto() {
+        SoundManager.playClick();
+        const video = document.getElementById('camera-stream');
+        const img = document.getElementById('camera-result');
+        const btnControls = document.getElementById('camera-controls');
+        const resControls = document.getElementById('result-controls');
+
+        img.classList.add('hidden');
+        video.classList.remove('hidden');
+        btnControls.classList.remove('hidden');
+        resControls.classList.add('hidden');
+    }
+
+    // Database Zat Aditif dan Adiktif
+    const databaseZat = {
+      // PENYEDAP RASA
+      'MSG': { kategori: 'Aditif - Penyedap', fungsi: 'Meningkatkan rasa gurih pada makanan', kode: 'E621', keywords: ['msg', 'monosodium', 'glutamat', 'penyedap', 'gurih', 'vetsin', 'e621'] },
+      'Monosodium Glutamat': { kategori: 'Aditif - Penyedap', fungsi: 'Meningkatkan rasa gurih pada makanan', kode: 'E621', keywords: ['msg', 'monosodium', 'glutamat', 'penyedap', 'gurih', 'e621'] },
+      'Inosin Monofosfat': { kategori: 'Aditif - Penyedap', fungsi: 'Penambah rasa umami dan gurih', kode: 'E631', keywords: ['inosin', 'monofosfat', 'imp', 'penyedap', 'gurih', 'e631'] },
+      'Guanilin Monofosfat': { kategori: 'Aditif - Penyedap', fungsi: 'Penambah rasa umami', kode: 'E627', keywords: ['guanilin', 'monofosfat', 'gmp', 'penyedap', 'e627'] },
+      
+      // PEWARNA
+      'Tartrazin': { kategori: 'Aditif - Pewarna', fungsi: 'Memberikan warna kuning pada makanan', kode: 'E102', keywords: ['tartrazin', 'kuning', 'yellow', 'e102', 'pewarna'] },
+      'Sunset Yellow': { kategori: 'Aditif - Pewarna', fungsi: 'Memberikan warna kuning-oranye pada makanan', kode: 'E110', keywords: ['sunset', 'yellow', 'kuning', 'oranye', 'e110', 'pewarna'] },
+      'Kuinolin Yellow': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna kuning kehijauan', kode: 'E104', keywords: ['kuinolin', 'quinoline', 'kuning', 'hijau', 'e104', 'pewarna'] },
+      'Beta Karoten': { kategori: 'Aditif - Pewarna Alami', fungsi: 'Pewarna kuning-oranye alami dari wortel', kode: 'E160a', keywords: ['beta', 'karoten', 'carotene', 'kuning', 'oranye', 'wortel', 'alami', 'e160a', 'e160'] },
+      'Kurkumin': { kategori: 'Aditif - Pewarna Alami', fungsi: 'Pewarna kuning dari kunyit', kode: 'E100', keywords: ['kurkumin', 'curcumin', 'kuning', 'kunyit', 'alami', 'e100'] },
+      'Allura Red': { kategori: 'Aditif - Pewarna', fungsi: 'Memberikan warna merah pada makanan', kode: 'E129', keywords: ['allura', 'red', 'merah', 'e129', 'pewarna'] },
+      'Ponceau 4R': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna merah sintetis', kode: 'E124', keywords: ['ponceau', 'merah', 'red', 'e124', 'pewarna'] },
+      'Eritrosin': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna merah-pink', kode: 'E127', keywords: ['eritrosin', 'erythrosine', 'merah', 'pink', 'e127', 'pewarna'] },
+      'Karmin': { kategori: 'Aditif - Pewarna Alami', fungsi: 'Pewarna merah alami dari serangga cochineal', kode: 'E120', keywords: ['karmin', 'carmine', 'merah', 'alami', 'e120', 'cochineal'] },
+      'Brilliant Blue': { kategori: 'Aditif - Pewarna', fungsi: 'Memberikan warna biru pada makanan', kode: 'E133', keywords: ['brilliant', 'blue', 'biru', 'e133', 'pewarna'] },
+      'Indigotin': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna biru-ungu', kode: 'E132', keywords: ['indigotin', 'indigo', 'biru', 'ungu', 'e132', 'pewarna'] },
+      'Fast Green': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna hijau sintetis', kode: 'E143', keywords: ['fast', 'green', 'hijau', 'e143', 'pewarna'] },
+      'Klorofil': { kategori: 'Aditif - Pewarna Alami', fungsi: 'Pewarna hijau alami dari tumbuhan', kode: 'E140', keywords: ['klorofil', 'chlorophyll', 'hijau', 'alami', 'daun', 'e140'] },
+      'Karamel': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna coklat dari gula yang dipanaskan', kode: 'E150a-d', keywords: ['karamel', 'caramel', 'coklat', 'cokelat', 'brown', 'e150', 'e150a', 'e150b', 'e150c', 'e150d', 'pewarna'] },
+      'Arang Aktif': { kategori: 'Aditif - Pewarna', fungsi: 'Pewarna hitam dari karbon', kode: 'E153', keywords: ['arang', 'aktif', 'karbon', 'hitam', 'black', 'e153', 'pewarna'] },
+      
+      // PENGAWET
+      'Natrium Benzoat': { kategori: 'Aditif - Pengawet', fungsi: 'Mencegah pertumbuhan bakteri dan jamur', keywords: ['natrium', 'benzoat', 'sodium', 'benzoate', 'pengawet', 'e211'] },
+      'Kalium Sorbat': { kategori: 'Aditif - Pengawet', fungsi: 'Mencegah pertumbuhan mikroorganisme', keywords: ['kalium', 'sorbat', 'potassium', 'sorbate', 'pengawet', 'e202'] },
+      'Natrium Nitrit': { kategori: 'Aditif - Pengawet', fungsi: 'Pengawet daging dan pemberi warna merah', keywords: ['natrium', 'nitrit', 'sodium', 'nitrite', 'pengawet', 'daging', 'e250'] },
+      'Asam Benzoat': { kategori: 'Aditif - Pengawet', fungsi: 'Pengawet makanan dan minuman', keywords: ['asam', 'benzoat', 'benzoic', 'acid', 'pengawet', 'e210'] },
+      'Asam Sorbat': { kategori: 'Aditif - Pengawet', fungsi: 'Pengawet anti jamur', keywords: ['asam', 'sorbat', 'sorbic', 'acid', 'pengawet', 'e200'] },
+      'Natrium Metabisulfit': { kategori: 'Aditif - Pengawet', fungsi: 'Pengawet dan antioksidan', keywords: ['natrium', 'metabisulfit', 'sodium', 'metabisulfite', 'pengawet', 'e223'] },
+      'Kalsium Propionat': { kategori: 'Aditif - Pengawet', fungsi: 'Pengawet anti jamur pada roti', keywords: ['kalsium', 'propionat', 'calcium', 'propionate', 'pengawet', 'roti', 'e282'] },
+      'Natrium Asetat': { kategori: 'Aditif - Pengawet', fungsi: 'Pengawet dan pengatur keasaman', keywords: ['natrium', 'asetat', 'sodium', 'acetate', 'pengawet', 'e262'] },
+      
+      // PEMANIS
+      'Aspartam': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis buatan rendah kalori', keywords: ['aspartam', 'aspartame', 'pemanis', 'manis', 'diet', 'e951'] },
+      'Sakarin': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis buatan rendah kalori', keywords: ['sakarin', 'saccharin', 'pemanis', 'manis', 'diet', 'e954'] },
+      'Sukralosa': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis buatan tahan panas', keywords: ['sukralosa', 'sucralose', 'pemanis', 'manis', 'diet', 'e955'] },
+      'Acesulfame K': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis buatan', keywords: ['acesulfame', 'pemanis', 'manis', 'diet', 'e950'] },
+      'Siklamat': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis buatan', keywords: ['siklamat', 'cyclamate', 'pemanis', 'manis', 'diet', 'e952'] },
+      'Neotam': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis buatan sangat manis', keywords: ['neotam', 'neotame', 'pemanis', 'manis', 'diet', 'e961'] },
+      'Sorbitol': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis dan pelembab', keywords: ['sorbitol', 'pemanis', 'manis', 'permen', 'gusi', 'e420'] },
+      'Xylitol': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis alami baik untuk gigi', keywords: ['xylitol', 'pemanis', 'manis', 'gigi', 'permen', 'karet'] },
+      'Manitol': { kategori: 'Aditif - Pemanis', fungsi: 'Pemanis dan anti-caking agent', keywords: ['manitol', 'mannitol', 'pemanis', 'manis', 'e421'] },
+      'Gula': { kategori: 'Aditif - Pemanis Alami', fungsi: 'Pemanis alami dari tebu', keywords: ['gula', 'sukrosa', 'sugar', 'sucrose', 'manis', 'alami', 'tebu'] },
+      'Fruktosa': { kategori: 'Aditif - Pemanis Alami', fungsi: 'Gula alami dari buah', keywords: ['fruktosa', 'fructose', 'gula', 'buah', 'manis', 'alami'] },
+      'Glukosa': { kategori: 'Aditif - Pemanis Alami', fungsi: 'Gula sederhana', keywords: ['glukosa', 'glucose', 'gula', 'manis', 'alami', 'energi'] },
+      'Madu': { kategori: 'Aditif - Pemanis Alami', fungsi: 'Pemanis alami dari lebah', keywords: ['madu', 'honey', 'manis', 'alami', 'lebah'] },
+      'Stevia': { kategori: 'Aditif - Pemanis Alami', fungsi: 'Pemanis alami nol kalori', keywords: ['stevia', 'pemanis', 'manis', 'alami', 'daun', 'diet', 'e960'] },
+      
+      // LAINNYA (Pengatur Keasaman, Pengental, Antioksidan, Pengemulsi)
+      'Asam Sitrat': { kategori: 'Aditif - Pengatur Keasaman', fungsi: 'Pemberi rasa asam', keywords: ['asam', 'sitrat', 'citric', 'acid', 'jeruk', 'asam', 'e330'] },
+      'Asam Asetat': { kategori: 'Aditif - Pengatur Keasaman', fungsi: 'Cuka', keywords: ['asam', 'asetat', 'acetic', 'acid', 'cuka', 'asam', 'e260'] },
+      'Gelatin': { kategori: 'Aditif - Pengental', fungsi: 'Pengental dari kolagen', keywords: ['gelatin', 'gelatine', 'pengental', 'jelly', 'kolagen'] },
+      'Agar-agar': { kategori: 'Aditif - Pengental Alami', fungsi: 'Pengental dari rumput laut', keywords: ['agar', 'pengental', 'rumput', 'laut', 'alami', 'jelly', 'e406'] },
+      'BHA': { kategori: 'Aditif - Antioksidan', fungsi: 'Mencegah ketengikan', keywords: ['bha', 'butylated', 'hydroxyanisole', 'antioksidan', 'e320'] },
+      'BHT': { kategori: 'Aditif - Antioksidan', fungsi: 'Mencegah oksidasi lemak', keywords: ['bht', 'butylated', 'hydroxytoluene', 'antioksidan', 'e321'] },
+      'Asam Askorbat': { kategori: 'Aditif - Antioksidan', fungsi: 'Vitamin C', keywords: ['asam', 'askorbat', 'ascorbic', 'vitamin', 'c', 'antioksidan', 'e300'] },
+      'Lesitin': { kategori: 'Aditif - Pengemulsi', fungsi: 'Pengemulsi alami', keywords: ['lesitin', 'lecithin', 'pengemulsi', 'kedelai', 'telur', 'e322'] },
+      'Garam': { kategori: 'Aditif - Pengawet Alami', fungsi: 'Pengawet alami', keywords: ['garam', 'salt', 'natrium', 'klorida', 'asin', 'alami', 'pengawet'] },
+      'Cuka': { kategori: 'Aditif - Pengawet Alami', fungsi: 'Pengawet alami', keywords: ['cuka', 'vinegar', 'asam', 'asetat', 'alami', 'pengawet'] },
+      
+      // --- ZAT ADIKTIF ---
+      'Heroin': { kategori: 'Adiktif - Narkotika Gol I', fungsi: 'Menghilangkan nyeri, sangat adiktif', keywords: ['heroin', 'putaw', 'narkotika', 'candu', 'adiktif', 'opioid'] },
+      'Kokain': { kategori: 'Adiktif - Narkotika Gol I', fungsi: 'Stimulan kuat', keywords: ['kokain', 'cocaine', 'narkotika', 'stimulan', 'adiktif', 'serbuk', 'putih'] },
+      'Ganja': { kategori: 'Adiktif - Narkotika Gol I', fungsi: 'Halusinogen, relaksasi', keywords: ['ganja', 'marijuana', 'cimeng', 'cannabis', 'narkotika', 'halusinogen', 'gelek'] },
+      'Morfin': { kategori: 'Adiktif - Narkotika Gol II', fungsi: 'Analgesik kuat medis', keywords: ['morfin', 'morphine', 'narkotika', 'nyeri', 'obat', 'adiktif', 'bius'] },
+      'Petidin': { kategori: 'Adiktif - Narkotika Gol II', fungsi: 'Pereda nyeri kuat', keywords: ['petidin', 'pethidine', 'narkotika', 'nyeri', 'medis', 'operasi'] },
+      'Kodein': { kategori: 'Adiktif - Narkotika Gol III', fungsi: 'Obat batuk dan pereda nyeri', keywords: ['kodein', 'codeine', 'narkotika', 'batuk', 'obat', 'sirup'] },
+      'Ekstasi': { kategori: 'Adiktif - Psikotropika Gol I', fungsi: 'Stimulan', keywords: ['ekstasi', 'ecstasy', 'inex', 'mdma', 'psikotropika', 'stimulan', 'pesta'] },
+      'LSD': { kategori: 'Adiktif - Psikotropika Gol I', fungsi: 'Halusinogen kuat', keywords: ['lsd', 'acid', 'tripping', 'halusinogen', 'psikotropika', 'kertas'] },
+      'Metamfetamin': { kategori: 'Adiktif - Psikotropika Gol II', fungsi: 'Stimulan sangat kuat (Sabu)', keywords: ['metamfetamin', 'sabu', 'shabu', 'meth', 'kristal', 'psikotropika', 'stimulan', 'nyabu'] },
+      'Amfetamin': { kategori: 'Adiktif - Psikotropika Gol II', fungsi: 'Stimulan saraf pusat', keywords: ['amfetamin', 'amphetamine', 'stimulan', 'psikotropika'] },
+      'Diazepam': { kategori: 'Adiktif - Psikotropika Gol IV', fungsi: 'Obat penenang', keywords: ['diazepam', 'valium', 'penenang', 'obat', 'tidur', 'psikotropika', 'cemas'] },
+      'Nitrazepam': { kategori: 'Adiktif - Psikotropika Gol IV', fungsi: 'Obat tidur/penenang', keywords: ['nitrazepam', 'dumolid', 'pil', 'koplo', 'penenang', 'psikotropika', 'tidur'] },
+      'Alprazolam': { kategori: 'Adiktif - Psikotropika Gol IV', fungsi: 'Obat penenang', keywords: ['alprazolam', 'xanax', 'penenang', 'obat', 'psikotropika'] },
+      'Alkohol': { kategori: 'Adiktif - Minuman Keras', fungsi: 'Depresan', keywords: ['alkohol', 'etanol', 'miras', 'bir', 'wine', 'depresan', 'mabuk', 'minuman'] },
+      'Nikotin': { kategori: 'Adiktif - Rokok', fungsi: 'Stimulan ringan', keywords: ['nikotin', 'rokok', 'tembakau', 'vape', 'adiktif', 'merokok'] },
+      'Kafein': { kategori: 'Adiktif - Stimulan Ringan', fungsi: 'Meningkatkan kewaspadaan', keywords: ['kafein', 'kopi', 'teh', 'cokelat', 'energi', 'stimulan', 'minuman'] },
+      'Inhalan': { kategori: 'Adiktif - Zat Hirup', fungsi: 'Uap bahan kimia', keywords: ['inhalan', 'lem', 'bensin', 'thinner', 'ngelem', 'mabuk', 'uap', 'aibon'] },
+      'Tembakau': { kategori: 'Adiktif - Bahan Rokok', fungsi: 'Sumber nikotin', keywords: ['tembakau', 'tobacco', 'rokok', 'linting', 'susur', 'nyirih'] },
+      'Theine': { kategori: 'Adiktif - Stimulan Ringan', fungsi: 'Stimulan dalam teh', keywords: ['theine', 'teh', 'stimulan', 'kafein'] },
+      'Tar': { kategori: 'Adiktif - Bahan Rokok', fungsi: 'Zat karsinogenik', keywords: ['tar', 'rokok', 'asap', 'kanker', 'paru', 'hitam', 'lengket', 'residu'] },
+      'Magic Mushroom': { kategori: 'Adiktif - Narkotika Gol I', fungsi: 'Halusinogen alami', keywords: ['magic', 'mushroom', 'jamur', 'tahi', 'sapi', 'halusinogen', 'narkotika'] },
+      'Tramadol': { kategori: 'Adiktif - Obat Keras', fungsi: 'Pereda nyeri kuat', keywords: ['tramadol', 'obat', 'nyeri', 'pil', 'sapi', 'adiktif', 'mabuk'] },
+      'Dextromethorphan': { kategori: 'Adiktif - Obat Batuk', fungsi: 'Obat batuk (halusinogen dosis tinggi)', keywords: ['dextro', 'dmp', 'komix', 'obat', 'batuk', 'mabuk', 'halusinasi'] },
+      'Trihexyphenidyl': { kategori: 'Adiktif - Psikotropika', fungsi: 'Obat parkinson (disalahgunakan)', keywords: ['trihex', 'pil', 'sapi', 'anjing', 'yarindo', 'y', 'adiktif'] }
+    };
+
+    const kataIceBreaking = [
+      'Gula Pasir', 'Garam Dapur', 'Kunyit', 'Daun Pandan', 'Gula Merah',
+      'Madu', 'Jeruk Nipis', 'Wortel', 'Buah Naga', 'Cuka',
+      'Bawang Putih', 'Kayu Manis', 'Daun Suji', 'Tepung Maizena', 'Cabai',
+      'Jahe', 'Lengkuas', 'Santan', 'Merica', 'Gula Aren'
+    ];
+
+    const soalTicTacToe = [
+      { pertanyaan: 'MSG termasuk zat aditif jenis...', jawaban: 'Penyedap rasa', pilihan: ['Pewarna', 'Penyedap rasa', 'Pengawet'] },
+      { pertanyaan: 'Tartrazin adalah pewarna dengan warna...', jawaban: 'Kuning', pilihan: ['Merah', 'Kuning', 'Biru'] },
+      { pertanyaan: 'Natrium benzoat berfungsi sebagai...', jawaban: 'Pengawet', pilihan: ['Pewarna', 'Pengawet', 'Pemanis'] },
+      { pertanyaan: 'Contoh zat adiktif yang ada dalam rokok adalah...', jawaban: 'Nikotin', pilihan: ['Kafein', 'Nikotin', 'MSG'] },
+      { pertanyaan: 'Aspartam adalah jenis zat aditif...', jawaban: 'Pemanis buatan', pilihan: ['Pewarna', 'Pemanis buatan', 'Pengawet'] },
+      { pertanyaan: 'Zat adiktif dapat menyebabkan...', jawaban: 'Kecanduan', pilihan: ['Alergi', 'Kecanduan', 'Keracunan'] },
+      { pertanyaan: 'Kafein banyak terdapat dalam...', jawaban: 'Kopi dan teh', pilihan: ['Susu', 'Kopi dan teh', 'Air mineral'] },
+      { pertanyaan: 'Sunset Yellow memberikan warna...', jawaban: 'Oranye', pilihan: ['Oranye', 'Hijau', 'Ungu'] },
+      { pertanyaan: 'Fungsi zat pengawet adalah...', jawaban: 'Mencegah pembusukan', pilihan: ['Menambah rasa', 'Mencegah pembusukan', 'Mempercantik warna'] },
+      { pertanyaan: 'Sakarin adalah pemanis yang...', jawaban: 'Rendah kalori', pilihan: ['Tinggi kalori', 'Rendah kalori', 'Tanpa rasa'] },
+      { pertanyaan: 'Zat aditif yang aman memiliki label...', jawaban: 'BPOM', pilihan: ['BPOM', 'Halal saja', 'Tanpa label'] },
+      { pertanyaan: 'Alkohol termasuk zat...', jawaban: 'Adiktif', pilihan: ['Aditif', 'Adiktif', 'Nutrisi'] },
+      { pertanyaan: 'Brilliant Blue memberikan warna...', jawaban: 'Biru', pilihan: ['Merah', 'Biru', 'Hijau'] },
+      { pertanyaan: 'Asam sitrat berfungsi mengatur...', jawaban: 'Keasaman', pilihan: ['Keasaman', 'Kemanisan', 'Kegurihan'] },
+      { pertanyaan: 'Dampak zat adiktif pada tubuh adalah...', jawaban: 'Merusak organ', pilihan: ['Menyehatkan', 'Merusak organ', 'Menambah energi'] },
+      { pertanyaan: 'Zat aditif alami contohnya adalah...', jawaban: 'Gula dan garam', pilihan: ['MSG', 'Gula dan garam', 'Tartrazin'] },
+      { pertanyaan: 'Kalium sorbat mencegah pertumbuhan...', jawaban: 'Mikroorganisme', pilihan: ['Sel tubuh', 'Mikroorganisme', 'Vitamin'] },
+      { pertanyaan: 'Pemanis buatan cocok untuk penderita...', jawaban: 'Diabetes', pilihan: ['Diabetes', 'Anemia', 'Hipertensi'] },
+      { pertanyaan: 'Morfin adalah contoh zat adiktif yang...', jawaban: 'Sangat berbahaya', pilihan: ['Aman dikonsumsi', 'Sangat berbahaya', 'Boleh bebas'] },
+      { pertanyaan: 'Allura Red memberikan warna...', jawaban: 'Merah', pilihan: ['Merah', 'Kuning', 'Hijau'] },
+      { pertanyaan: 'Sukralosa adalah pemanis yang...', jawaban: 'Tahan panas', pilihan: ['Mudah rusak', 'Tahan panas', 'Beracun'] },
+      { pertanyaan: 'Cara menghindari zat adiktif adalah...', jawaban: 'Tidak mengkonsumsi', pilihan: ['Konsumsi sedikit', 'Tidak mengkonsumsi', 'Konsumsi rutin'] },
+      { pertanyaan: 'Label kemasan penting untuk mengetahui...', jawaban: 'Kandungan zat', pilihan: ['Harga produk', 'Kandungan zat', 'Merek produk'] },
+      { pertanyaan: 'Efek samping MSG berlebihan adalah...', jawaban: 'Sakit kepala', pilihan: ['Kulit cantik', 'Sakit kepala', 'Tambah tinggi'] },
+      { pertanyaan: 'Zat aditif yang berlebihan dapat...', jawaban: 'Berbahaya bagi tubuh', pilihan: ['Menyehatkan', 'Berbahaya bagi tubuh', 'Menambah gizi'] }
+    ];
+
+    const bankSoalAsesmen = [
+      { tanya: "Seorang siswa membeli minuman kemasan berwarna merah mencolok yang harganya sangat murah. Setelah diminum, tenggorokannya terasa gatal dan warna merah menempel kuat di lidah. Analisis yang paling tepat terkait zat aditif dalam minuman tersebut adalah...", opsi: ["Minuman tersebut mengandung pewarna alami karmin yang aman.", "Minuman tersebut kemungkinan mengandung Rhodamin B yang sebenarnya pewarna tekstil.", "Minuman tersebut mengandung pemanis buatan yang menyebabkan gatal.", "Minuman tersebut menggunakan pewarna Eritrosin yang sudah kedaluwarsa."], kunci: 1 },
+      { tanya: "Perhatikan komposisi makanan ringan berikut: 'Tepung terigu, Minyak nabati, Garam, Gula, Monosodium Glutamat, Tartrazin CI 19140, Natrium Benzoat'. Berdasarkan data tersebut, fungsi zat aditif Tartrazin dan Natrium Benzoat secara berurutan adalah...", opsi: ["Penyedap rasa dan Pengawet", "Pewarna dan Pengawet", "Pemanis dan Penyedap rasa", "Pengawet dan Pewarna"], kunci: 1 },
+      { tanya: "Ibu ingin membuat nasi kuning tumpeng yang wangi dan berwarna cerah secara alami. Bahan apa yang sebaiknya dikombinasikan oleh Ibu?", opsi: ["Tartrazin dan Essen Pisang", "Kunyit dan Daun Pandan", "Wortel dan Vanili", "Kunyit dan Daun Suji"], kunci: 1 },
+      { tanya: "Seorang penderita diabetes ingin tetap menikmati teh manis namun harus membatasi asupan kalori dan gula darahnya. Pemanis yang paling tepat disarankan untuk orang tersebut adalah...", opsi: ["Gula Pasir (Sukrosa)", "Gula Merah (Gula Aren)", "Madu Murni", "Aspartam atau Stevia"], kunci: 3 },
+      { tanya: "Bakso yang dijual oleh pedagang X memiliki tekstur sangat kenyal, tidak mudah basi meski dibiarkan 2 hari di suhu ruang, dan tidak dihinggapi lalat. Kita patut mencurigai bakso tersebut mengandung zat berbahaya, yaitu...", opsi: ["Boraks atau Formalin", "Monosodium Glutamat", "Natrium Benzoat", "Garam Dapur berlebih"], kunci: 0 },
+      { tanya: "Mengapa penggunaan zat aditif alami lebih disarankan daripada zat aditif buatan (sintetis), meskipun zat buatan lebih praktis?", opsi: ["Zat alami warnanya lebih mencolok.", "Zat alami lebih murah harganya di pasaran.", "Zat alami lebih aman bagi tubuh dan minim efek samping.", "Zat alami membuat makanan tahan lebih lama dibanding zat buatan."], kunci: 2 },
+      { tanya: "Andi sering mengonsumsi mie instan yang mengandung natrium (garam) dan MSG tinggi setiap hari. Analisis dampak kesehatan jangka panjang yang paling mungkin terjadi pada Andi adalah...", opsi: ["Risiko diabetes melitus.", "Risiko hipertensi (darah tinggi) dan gangguan ginjal.", "Penyakit menular seperti flu.", "Kekurangan vitamin C."], kunci: 1 },
+      { tanya: "Rokok mengandung ribuan zat kimia berbahaya. Zat yang menyebabkan darah perokok kekurangan oksigen karena diikat oleh zat tersebut daripada oksigen adalah...", opsi: ["Nikotin", "Tar", "Karbon Monoksida (CO)", "Aseton"], kunci: 2 },
+      { tanya: "Seseorang yang sudah lama merokok mencoba untuk berhenti, namun ia merasa gelisah, sulit berkonsentrasi, dan sangat ingin merokok kembali. Gejala ini menunjukkan bahwa nikotin bersifat...", opsi: ["Karsinogenik (menyebabkan kanker)", "Adiktif (menyebabkan ketergantungan)", "Halusinogen (menyebabkan khayalan)", "Sedatif (menenangkan)"], kunci: 1 },
+      { tanya: "Kopi dan teh mengandung kafein yang merupakan zat psikoaktif. Mengapa meminum kopi dapat menghilangkan rasa kantuk?", opsi: ["Kafein adalah depresan yang menenangkan saraf.", "Kafein adalah stimulan yang meningkatkan kerja sistem saraf pusat.", "Kafein mengandung banyak gula sebagai energi.", "Kafein menurunkan detak jantung sehingga tubuh rileks."], kunci: 1 },
+      { tanya: "Perhatikan ciri-ciri pengguna narkoba berikut: (1) Mata merah dan mengantuk, (2) Suka tertawa sendiri, (3) Persepsi ruang dan waktu terganggu. Jenis zat adiktif yang paling mungkin dikonsumsi adalah...", opsi: ["Heroin (Putaw)", "Ganja (Mariyuana)", "Ekstasi", "Sabu-sabu"], kunci: 1 },
+      { tanya: "Seorang sopir mengonsumsi alkohol sebelum mengemudi. Hal ini sangat berbahaya karena alkohol tergolong depresan yang menyebabkan...", opsi: ["Meningkatnya kewaspadaan dan refleks.", "Menurunnya koordinasi gerak tubuh dan melambatnya reaksi.", "Halusinasi melihat benda yang tidak nyata.", "Jantung berdebar sangat kencang."], kunci: 1 },
+      { tanya: "Penyalahgunaan lem (inhalan) di kalangan remaja sangat berbahaya karena uap pelarut organik tersebut langsung merusak organ...", opsi: ["Lambung dan Usus", "Otot dan Tulang", "Otak dan Sistem Saraf Pusat", "Kulit dan Rambut"], kunci: 2 },
+      { tanya: "Morfin secara medis digunakan sebagai obat bius atau penghilang rasa nyeri hebat bagi pasien kanker stadium akhir. Namun, morfin dilarang digunakan sembarangan karena...", opsi: ["Harganya sangat mahal.", "Menyebabkan ketergantungan fisik dan psikis yang sangat kuat (Narkotika Gol. II).", "Tidak memberikan efek apapun pada orang sehat.", "Dapat menyebabkan alergi kulit."], kunci: 1 },
+      { tanya: "Banyak produk makanan ringan anak-anak menggunakan pewarna sintetik 'Sunset Yellow FCF' atau 'Tartrazin'. Apa kode internasional (E-number) yang sering digunakan untuk mengidentifikasi bahan-bahan seperti ini pada label?", opsi: ["Kode P-IRT", "Kode E (misal E102, E110)", "Kode BPOM MD", "Kode Halal MUI"], kunci: 1 },
+      { tanya: "Jika seseorang mengalami overdosis obat stimulan seperti sabu-sabu atau ekstasi, gejala fisik yang paling menonjol dan berbahaya adalah...", opsi: ["Napas melambat dan tertidur pulas.", "Detak jantung sangat cepat (takiardia), suhu tubuh naik drastis, dan pecahnya pembuluh darah.", "Mata berair dan hidung tersumbat.", "Rasa lapar yang berlebihan."], kunci: 1 },
+      { tanya: "Upaya pencegahan penyalahgunaan narkoba yang paling efektif dimulai dari lingkungan keluarga adalah dengan cara...", opsi: ["Memberikan uang saku sebanyak-banyaknya.", "Melarang anak bergaul dengan siapapun.", "Menciptakan komunikasi yang harmonis dan terbuka antar anggota keluarga.", "Membelikan anak kendaraan pribadi agar tidak naik angkutan umum."], kunci: 2 },
+      { tanya: "Seorang pedagang mengganti gula pasir dengan Sakarin dalam jumlah banyak untuk membuat es teh yang dijualnya agar untung besar. Setelah diminum, es teh tersebut terasa...", opsi: ["Manis alami dan segar.", "Tawar tidak berasa.", "Manis namun meninggalkan rasa pahit (bitter aftertaste) di tenggorokan.", "Asam dan kecut."], kunci: 2 },
+      { tanya: "Zat adiktif bukan narkotika dan psikotropika yang sering kita temui sehari-hari namun penggunaannya dibatasi usia adalah...", opsi: ["Kopi dan Teh", "Rokok dan Minuman Beralkohol", "Nasi dan Roti", "Susu dan Jus Buah"], kunci: 1 },
+      { tanya: "Peran Badan Pengawas Obat dan Makanan (BPOM) dalam melindungi masyarakat dari bahaya zat aditif adalah...", opsi: ["Melarang semua jenis makanan kemasan.", "Menetapkan batas maksimum penggunaan zat aditif yang aman (ADI) dan melakukan uji laboratorium.", "Menjual bahan makanan pokok.", "Memberikan resep masakan kepada masyarakat."], kunci: 1 }
+    ];
+
+    // State Management
+    let currentStage = 'menu';
+    let investigasiTab = 'aditif';
+    let iceBreakingKelompok = 1;
+    let currentWordIndex = 0;
+    let wordTimer = 30;
+    let wordTimerInterval = null;
+    let investigasiData = [];
+    let selectedZatList = [];
+    let ticTacBoard = [];
+    let currentPlayer = 'X';
+    let ticTacScore = { X: 0, O: 0 };
+    let gameOver = false;
+    let selectedCell = null;
+    let asesmenCurrentSoal = 0;
+    let asesmenScore = 0;
+    let asesmenAnswers = [];
+
+    const defaultConfig = {
+      judul_utama: 'Zat Aditif dan Adiktif',
+      nama_guru: 'Guru IPA',
+      background_color: '#FF9A9E', 
+      primary_color: '#FF4081',
+      secondary_color: '#00BCD4',
+      text_color: '#263238', 
+      accent_color: '#FFD740', 
+      font_family: 'Comic Sans MS',
+      font_size: 16
+    };
+
+    const dataHandler = {
+      onDataChanged(data) {
+        investigasiData = data;
+        if (currentStage === 'investigasi') renderInvestigasi();
+      }
+    };
+
+    async function initApp() {
+      if (typeof window.dataSdk === 'undefined') {
+        window.dataSdk = {
+          init: async (handler) => { return { isOk: true }; },
+          create: async (data) => {
+            investigasiData.push(data);
+            dataHandler.onDataChanged(investigasiData);
+            return { isOk: true };
+          },
+          delete: async (data) => {
+            investigasiData = investigasiData.filter(d => d.id !== data.id);
+            dataHandler.onDataChanged(investigasiData);
+            return { isOk: true };
+          }
+        };
+      }
+
+      if (typeof window.elementSdk === 'undefined') {
+        window.elementSdk = {
+          init: async (options) => {
+            if (options && options.onConfigChange) { options.onConfigChange(defaultConfig); }
+            return { isOk: true };
+          },
+          setConfig: (newConfig) => { Object.assign(window.elementSdk.config, newConfig); },
+          config: { ...defaultConfig }
+        };
+      }
+
+      try { await window.dataSdk.init(dataHandler); } catch (err) { console.error(err); }
+      
+      try {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+             const customFont = config.font_family || defaultConfig.font_family;
+             document.body.style.fontFamily = `${customFont}, Comic Sans MS, sans-serif`;
+          },
+          mapToCapabilities: (config) => ({
+            recolorables: [], borderables: [], fontEditable: {}, fontSizeable: {}
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ['judul_utama', config.judul_utama || defaultConfig.judul_utama],
+            ['nama_guru', config.nama_guru || defaultConfig.nama_guru]
+          ])
+        });
+        renderMenu();
+        SoundManager.init();
+      } catch (err) {
+        renderMenu(); 
+      }
+    }
+
+    function renderMenu() {
+      currentStage = 'menu';
+      stopTimer();
+      const config = (window.elementSdk && window.elementSdk.config) ? window.elementSdk.config : defaultConfig;
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full p-8">
+          <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 fade-in bg-white/30 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/50">
+              <h1 class="text-5xl font-bold mb-4 drop-shadow-md" style="color: ${config.primary_color || defaultConfig.primary_color}">${config.judul_utama || defaultConfig.judul_utama}</h1>
+              <p class="text-xl font-semibold mb-6" style="color: ${config.text_color || defaultConfig.text_color}">Oleh: ${config.nama_guru || defaultConfig.nama_guru}</p>
+              <div class="bg-white/80 inline-block max-w-3xl px-8 py-4 rounded-xl mb-6 border border-white/50 shadow-sm mx-auto">
+                <h3 class="font-bold text-lg text-gray-800 mb-2">🎯 Tujuan Pembelajaran</h3>
+                <p class="text-gray-700 leading-relaxed">Peserta didik diharapkan mampu mengidentifikasi berbagai jenis zat aditif dan adiktif, memahami fungsi penggunaannya, serta menganalisis dampak penggunaannya terhadap kesehatan melalui kegiatan investigasi dan permainan interaktif.</p>
+              </div>
+              <div class="mt-4 text-6xl animate-bounce">🧪 ✨ 🧬</div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="stage-card bg-white/90 backdrop-blur rounded-xl p-6 shadow-xl" onclick="goToStage('icebreaking')">
+                <div class="text-6xl text-center mb-4 transform hover:rotate-12 transition">🎯</div><h3 class="text-xl font-bold text-center mb-2 text-pink-600">1. Ice Breaking</h3><p class="text-center text-gray-600">Tebak Kata - Kelompok</p>
+              </div>
+              <div class="stage-card bg-white/90 backdrop-blur rounded-xl p-6 shadow-xl" onclick="goToStage('materi')">
+                <div class="text-6xl text-center mb-4 transform hover:scale-110 transition">📚</div><h3 class="text-xl font-bold text-center mb-2 text-yellow-600">2. Materi</h3><p class="text-center text-gray-600">Penjelasan Zat Aditif</p>
+              </div>
+              <div class="stage-card bg-white/90 backdrop-blur rounded-xl p-6 shadow-xl" onclick="goToStage('investigasi')">
+                <div class="text-6xl text-center mb-4 transform hover:scale-110 transition">🔍</div><h3 class="text-xl font-bold text-center mb-2 text-blue-600">3. Investigasi</h3><p class="text-center text-gray-600">LKPD Interaktif</p>
+              </div>
+              <div class="stage-card bg-white/90 backdrop-blur rounded-xl p-6 shadow-xl" onclick="goToStage('tictactoe')">
+                <div class="text-6xl text-center mb-4 transform hover:rotate-12 transition">🎮</div><h3 class="text-xl font-bold text-center mb-2 text-purple-600">4. Uji Pemahaman</h3><p class="text-center text-gray-600">Tic Tac Toe 5x5</p>
+              </div>
+              <div class="stage-card bg-white/90 backdrop-blur rounded-xl p-6 shadow-xl" onclick="goToStage('refleksi')">
+                <div class="text-6xl text-center mb-4 transform hover:scale-110 transition">📝</div><h3 class="text-xl font-bold text-center mb-2 text-orange-600">5. Refleksi</h3><p class="text-center text-gray-600">Evaluasi Pembelajaran</p>
+              </div>
+              <div class="stage-card bg-white/90 backdrop-blur rounded-xl p-6 shadow-xl border-b-4 border-red-500" onclick="goToStage('asesmen')">
+                <div class="text-6xl text-center mb-4 transform hover:scale-110 transition">🎓</div><h3 class="text-xl font-bold text-center mb-2 text-red-600">6. Asesmen</h3><p class="text-center text-gray-600">Tes Analisis (20 Soal)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMateri() {
+        currentStage = 'materi';
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="min-h-full p-8">
+                <div class="max-w-5xl mx-auto">
+                    <button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary mb-6 px-6 py-3 text-white rounded-full font-bold shadow-lg hover:shadow-xl transition">← Kembali ke Menu</button>
+                    <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-yellow-300">
+                        <div class="text-center mb-8"><h2 class="text-4xl font-bold text-yellow-600 mb-2">📚 Zat Aditif pada Makanan</h2><p class="text-gray-600 text-lg">Bahan tambahan pangan untuk meningkatkan kualitas makanan.</p></div>
+                        <div class="space-y-8 mb-12">
+                            <div class="bg-yellow-50 p-6 rounded-2xl border-l-8 border-yellow-400 shadow-sm materi-card"><h3 class="text-2xl font-bold text-yellow-800 mb-2">🤔 Apa itu Zat Aditif?</h3><p class="text-gray-700 text-lg leading-relaxed"><strong>Zat aditif</strong> adalah bahan yang ditambahkan dengan sengaja ke dalam makanan atau minuman.</p></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-red-50 p-6 rounded-2xl border-t-8 border-red-400 shadow-sm materi-card"><div class="text-4xl mb-2">🎨</div><h3 class="text-xl font-bold text-red-700 mb-3">1. Pewarna</h3><div class="space-y-2"><div class="bg-white p-3 rounded-lg border border-red-100"><span class="font-bold text-green-600">🌿 Alami:</span> Kunyit, Daun Suji, Buah Naga.</div><div class="bg-white p-3 rounded-lg border border-red-100"><span class="font-bold text-blue-600">🧪 Buatan:</span> Tartrazin, Allura Red.</div></div></div>
+                                <div class="bg-pink-50 p-6 rounded-2xl border-t-8 border-pink-400 shadow-sm materi-card"><div class="text-4xl mb-2">🍬</div><h3 class="text-xl font-bold text-pink-700 mb-3">2. Pemanis</h3><div class="space-y-2"><div class="bg-white p-3 rounded-lg border border-pink-100"><span class="font-bold text-green-600">🌿 Alami:</span> Gula pasir, Gula merah, Madu.</div><div class="bg-white p-3 rounded-lg border border-pink-100"><span class="font-bold text-blue-600">🧪 Buatan:</span> Aspartam, Sakarin.</div></div></div>
+                                <div class="bg-blue-50 p-6 rounded-2xl border-t-8 border-blue-400 shadow-sm materi-card"><div class="text-4xl mb-2">🛡️</div><h3 class="text-xl font-bold text-blue-700 mb-3">3. Pengawet</h3><div class="space-y-2"><div class="bg-white p-3 rounded-lg border border-blue-100"><span class="font-bold text-green-600">🌿 Alami:</span> Garam, Gula, Cuka.</div><div class="bg-white p-3 rounded-lg border border-blue-100"><span class="font-bold text-blue-600">🧪 Buatan:</span> Natrium Benzoat.</div></div></div>
+                                <div class="bg-green-50 p-6 rounded-2xl border-t-8 border-green-400 shadow-sm materi-card"><div class="text-4xl mb-2">🍲</div><h3 class="text-xl font-bold text-green-700 mb-3">4. Penyedap</h3><div class="space-y-2"><div class="bg-white p-3 rounded-lg border border-green-100"><span class="font-bold text-green-600">🌿 Alami:</span> Bawang putih, Merica, Garam.</div><div class="bg-white p-3 rounded-lg border border-green-100"><span class="font-bold text-blue-600">🧪 Buatan:</span> MSG (Vetsin).</div></div></div>
+                            </div>
+                        </div>
+                        <hr class="border-t-4 border-dashed border-gray-300 my-12">
+                        <div class="text-center mb-8"><h2 class="text-4xl font-bold text-red-600 mb-2">⛔ Zat Adiktif</h2><p class="text-gray-600 text-lg">Zat yang dapat menyebabkan ketergantungan atau kecanduan.</p></div>
+                        <div class="space-y-8">
+                            <div class="bg-red-50 p-6 rounded-2xl border-l-8 border-red-500 shadow-sm materi-card"><h3 class="text-2xl font-bold text-red-800 mb-2">😰 Apa itu Zat Adiktif?</h3><p class="text-gray-700 text-lg leading-relaxed"><strong>Zat adiktif</strong> adalah zat yang menyebabkan ketergantungan (adiksi).</p></div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-purple-50 p-6 rounded-2xl border-t-8 border-purple-500 shadow-sm materi-card"><div class="text-4xl mb-2">💉</div><h3 class="text-xl font-bold text-purple-800 mb-3">1. Narkotika</h3><ul class="list-disc list-inside text-gray-700 space-y-1"><li>Heroin</li><li>Ganja</li><li>Kokain</li></ul></div>
+                                <div class="bg-indigo-50 p-6 rounded-2xl border-t-8 border-indigo-500 shadow-sm materi-card"><div class="text-4xl mb-2">💊</div><h3 class="text-xl font-bold text-indigo-800 mb-3">2. Psikotropika</h3><ul class="list-disc list-inside text-gray-700 space-y-1"><li>Ekstasi</li><li>Sabu-sabu</li><li>Obat Tidur</li></ul></div>
+                                <div class="bg-orange-50 p-6 rounded-2xl border-t-8 border-orange-500 shadow-sm materi-card"><div class="text-4xl mb-2">☕</div><h3 class="text-xl font-bold text-orange-800 mb-3">3. Zat Lainnya</h3><ul class="list-disc list-inside text-gray-700 space-y-1"><li>Alkohol</li><li>Nikotin</li><li>Kafein</li></ul></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderIceBreaking() {
+      currentStage = 'icebreaking';
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full p-8">
+          <div class="max-w-4xl mx-auto">
+            <button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary mb-6 px-6 py-3 text-white rounded-full font-bold shadow-lg hover:shadow-xl transition">← Kembali ke Menu</button>
+            <div class="bg-white/90 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-yellow-200">
+              <h2 class="text-3xl font-bold text-center mb-6 text-pink-600">🎯 Ice Breaking - Tebak Kata</h2>
+              <div class="bg-blue-100 p-6 rounded-2xl mb-6 border-l-8 border-blue-400">
+                <h3 class="text-xl font-bold mb-3 text-blue-800">📋 Aturan Permainan:</h3>
+                <ul class="list-disc list-inside space-y-2 text-blue-900 font-medium"><li>Setiap kelompok mendapat giliran menjelaskan kata</li><li>Satu siswa maju menjelaskan tanpa menyebut kata tersebut</li><li>Teman kelompok harus menebak dalam waktu 30 detik</li></ul>
+              </div>
+              <div class="text-center mb-6"><div class="inline-block bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white px-10 py-4 rounded-full text-2xl font-bold shadow-lg transform rotate-2">Kelompok ${iceBreakingKelompok}</div></div>
+              <div id="word-display" class="text-center mb-8"><button onclick="showWord()" class="accent-btn btn-gradient-accent px-12 py-6 text-white rounded-2xl text-2xl font-bold shadow-xl hover:scale-105 transition">⭐ Tampilkan Kata ⭐</button></div>
+              <div class="flex justify-center gap-4"><button onclick="nextKelompok()" class="secondary-btn btn-gradient-secondary px-8 py-4 text-white rounded-full text-xl font-bold shadow-lg">Kelompok Berikutnya</button><button onclick="resetIceBreaking()" class="bg-gray-400 hover:bg-gray-500 px-8 py-4 text-white rounded-full text-xl font-bold shadow-lg">Reset</button></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showWord() {
+      SoundManager.playClick();
+      if (currentWordIndex >= kataIceBreaking.length) { alert('Semua kata sudah ditampilkan!'); return; }
+      const kata = kataIceBreaking[currentWordIndex];
+      const wordDisplay = document.getElementById('word-display');
+      wordTimer = 30;
+      if (wordTimerInterval) clearInterval(wordTimerInterval);
+      wordDisplay.innerHTML = `<div class="word-card bg-gradient-to-r from-yellow-400 to-orange-500 p-12 rounded-3xl shadow-2xl transform rotate-1"><div class="text-6xl font-bold text-white mb-4 drop-shadow-md">${kata}</div><div class="text-4xl font-bold text-white bg-black/20 inline-block px-6 py-2 rounded-full" id="timer">⏱️ ${wordTimer}</div></div><button onclick="stopTimer()" class="mt-8 bg-red-500 hover:bg-red-600 px-10 py-4 text-white rounded-full text-xl font-bold shadow-lg">⛔ Berhenti</button>`;
+      wordTimerInterval = setInterval(() => {
+        wordTimer--;
+        SoundManager.playTick(); 
+        const timerEl = document.getElementById('timer');
+        if (timerEl) { timerEl.textContent = `⏱️ ${wordTimer}`; if (wordTimer <= 10) { timerEl.classList.remove('bg-black/20'); timerEl.classList.add('bg-red-600', 'animate-pulse'); } }
+        if (wordTimer <= 0) stopTimer();
+      }, 1000);
+      currentWordIndex++;
+    }
+
+    function stopTimer() { SoundManager.playClick(); if (wordTimerInterval) { clearInterval(wordTimerInterval); wordTimerInterval = null; } }
+    function nextKelompok() { SoundManager.playClick(); iceBreakingKelompok = iceBreakingKelompok >= 3 ? 1 : iceBreakingKelompok + 1; stopTimer(); renderIceBreaking(); }
+    function resetIceBreaking() { SoundManager.playClick(); iceBreakingKelompok = 1; currentWordIndex = 0; stopTimer(); renderIceBreaking(); }
+
+    function switchInvestigasiTab(tab) { SoundManager.playClick(); investigasiTab = tab; renderInvestigasi(); }
+
+    function renderInvestigasi() {
+      currentStage = 'investigasi';
+      selectedZatList = [];
+      const app = document.getElementById('app');
+      const isAditif = investigasiTab === 'aditif';
+      const formTitle = isAditif ? '🕵️ Investigasi Zat Aditif (Makanan/Minuman)' : '💀 Investigasi Zat Adiktif (Rokok/Kopi/dll)';
+      const formColor = isAditif ? 'green' : 'red';
+      const jenisOptions = isAditif ? `<option value="Makanan">Makanan</option><option value="Minuman">Minuman</option><option value="Snack">Snack</option>` : `<option value="Rokok">Rokok</option><option value="Kopi">Kopi</option><option value="Teh">Teh</option><option value="Minuman Berenergi">Minuman Berenergi</option><option value="Alkohol">Alkohol</option><option value="Obat">Obat</option>`;
+
+      app.innerHTML = `
+        <div class="min-h-full p-8">
+          <div class="max-w-6xl mx-auto">
+            <button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary mb-6 px-6 py-3 text-white rounded-full font-bold shadow-lg">← Kembali ke Menu</button>
+            <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-${formColor}-200">
+              <h2 class="text-3xl font-bold text-center mb-6 text-${formColor}-600">🔍 LKPD Investigasi Produk</h2>
+              <div class="flex justify-center gap-4 mb-8">
+                <button onclick="switchInvestigasiTab('aditif')" class="px-6 py-3 rounded-full font-bold transition ${isAditif ? 'bg-green-500 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}">🕵️ Zat Aditif</button>
+                <button onclick="switchInvestigasiTab('adiktif')" class="px-6 py-3 rounded-full font-bold transition ${!isAditif ? 'bg-red-500 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}">💀 Zat Adiktif</button>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gradient-to-br from-${formColor}-50 to-${isAditif ? 'emerald' : 'orange'}-100 p-6 rounded-2xl shadow-inner border border-${formColor}-200">
+                  <h3 class="text-xl font-bold mb-4 text-${formColor}-800">${formTitle}</h3>
+                  <form id="investigasi-form" class="space-y-4">
+                    <input type="hidden" id="tipe_investigasi" value="${investigasiTab}">
+                    <div><label for="kelompok" class="block font-semibold mb-2 text-${formColor}-900">Kelompok:</label><select id="kelompok" class="w-full p-3 border-2 border-${formColor}-300 rounded-xl outline-none" required><option value="">Pilih Kelompok</option><option value="Kelompok 1">Kelompok 1</option><option value="Kelompok 2">Kelompok 2</option><option value="Kelompok 3">Kelompok 3</option></select></div>
+                    <div><label for="nama_produk" class="block font-semibold mb-2 text-${formColor}-900">Nama Produk:</label><input type="text" id="nama_produk" class="w-full p-3 border-2 border-${formColor}-300 rounded-xl outline-none" placeholder="Contoh: ${isAditif ? 'Indomie' : 'Kopi Kapal Api'}" required></div>
+                    <div><label for="jenis_produk" class="block font-semibold mb-2 text-${formColor}-900">Jenis Produk:</label><select id="jenis_produk" class="w-full p-3 border-2 border-${formColor}-300 rounded-xl outline-none" required><option value="">Pilih Jenis</option>${jenisOptions}</select></div>
+                    <div><label for="zat_ditemukan" class="block font-semibold mb-2 text-${formColor}-900">Zat yang Ditemukan:</label><input type="text" id="zat_ditemukan" class="w-full p-3 border-2 border-${formColor}-300 rounded-xl outline-none" placeholder="Ketik nama zat..."><div id="saran-zat" class="mt-2 bg-white border-2 border-gray-200 rounded-xl max-h-48 overflow-y-auto hidden shadow-lg z-10 relative"></div><div id="zat-terpilih" class="mt-3 space-y-2"></div><button type="button" onclick="tambahZat()" class="mt-2 bg-${formColor}-500 text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-${formColor}-600 shadow-md transition">+ Tambah Zat</button></div>
+                    <button type="submit" class="w-full py-4 text-white rounded-xl text-lg font-bold shadow-lg transform active:scale-95 transition bg-${formColor}-600 hover:bg-${formColor}-700">💾 Simpan Data</button>
+                  </form>
+                </div>
+                <div><h3 class="text-xl font-bold mb-4 text-gray-700">📊 Data Investigasi (${isAditif ? 'Aditif' : 'Adiktif'})</h3><div class="bg-gray-50 p-4 rounded-2xl max-h-96 overflow-y-auto border-2 border-gray-200 shadow-inner"><div id="data-table"></div></div><button onclick="downloadLKPD()" class="w-full mt-4 py-3 text-white rounded-xl font-bold shadow-lg transform active:scale-95 transition bg-blue-600 hover:bg-blue-700">📥 Download LKPD (PDF)</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      const form = document.getElementById('investigasi-form');
+      form.addEventListener('submit', handleInvestigasiSubmit);
+      const inputZat = document.getElementById('zat_ditemukan');
+      inputZat.addEventListener('input', handleZatInput);
+      renderDataTable();
+    }
+
+    function handleZatInput(e) {
+      const input = e.target.value.toLowerCase().trim();
+      const saranDiv = document.getElementById('saran-zat');
+      const isAditifTab = investigasiTab === 'aditif';
+      if (input.length < 2) { saranDiv.classList.add('hidden'); return; }
+      const matches = Object.keys(databaseZat).filter(zat => {
+        const zatInfo = databaseZat[zat];
+        const isKategoriAdiktif = zatInfo.kategori.toLowerCase().includes('adiktif');
+        if (isAditifTab && isKategoriAdiktif) return false;
+        if (!isAditifTab && !isKategoriAdiktif) return false;
+        const namaZat = zat.toLowerCase();
+        const keywords = zatInfo.keywords || [];
+        if (namaZat.includes(input)) return true;
+        return keywords.some(keyword => keyword.includes(input) || input.includes(keyword));
+      });
+      const sortedMatches = matches.sort((a, b) => {
+        const aName = a.toLowerCase();
+        const bName = b.toLowerCase();
+        if (aName.startsWith(input) && !bName.startsWith(input)) return -1;
+        if (!aName.startsWith(input) && bName.startsWith(input)) return 1;
+        return 0;
+      });
+      if (sortedMatches.length > 0) {
+        const maxResults = 10;
+        const limitedMatches = sortedMatches.slice(0, maxResults);
+        saranDiv.innerHTML = limitedMatches.map(zat => {
+          const zatInfo = databaseZat[zat];
+          const keywords = zatInfo.keywords || [];
+          const matchedKeywords = keywords.filter(kw => kw.includes(input) || input.includes(kw)).slice(0, 3);
+          return `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0" onclick="pilihZat('${zat.replace(/'/g, "\\'")}')"><div class="flex justify-between items-start"><div class="font-bold text-blue-600">${zat}</div>${zatInfo.kode ? `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold shadow-sm">${zatInfo.kode}</span>` : ''}</div><div class="text-sm text-gray-600">${zatInfo.kategori}</div>${matchedKeywords.length > 0 ? `<div class="text-xs text-purple-500 mt-1 font-semibold">🔍 ${matchedKeywords.join(', ')}</div>` : ''}</div>`;
+        }).join('');
+        saranDiv.classList.remove('hidden');
+      } else {
+        saranDiv.innerHTML = `<div class="p-4 text-center text-gray-500"><div class="text-2xl mb-1">❌</div><div class="text-sm font-semibold">Zat tidak ditemukan</div><div class="text-xs mt-1">Coba kata kunci lain</div></div>`;
+        saranDiv.classList.remove('hidden');
+      }
+    }
+
+    function pilihZat(namaZat) { SoundManager.playClick(); document.getElementById('zat_ditemukan').value = namaZat; document.getElementById('saran-zat').classList.add('hidden'); }
+    function tambahZat() {
+      SoundManager.playClick();
+      const inputZat = document.getElementById('zat_ditemukan');
+      const namaZat = inputZat.value.trim();
+      if (!namaZat) { alert('Silakan masukkan nama zat terlebih dahulu!'); return; }
+      const zatInfo = databaseZat[namaZat];
+      if (!zatInfo) { alert('Zat tidak ditemukan dalam database.'); return; }
+      if (selectedZatList.some(z => z.nama === namaZat)) { alert('Zat ini sudah ditambahkan!'); return; }
+      selectedZatList.push({ nama: namaZat, kategori: zatInfo.kategori, fungsi: zatInfo.fungsi, kode: zatInfo.kode || '-' });
+      inputZat.value = '';
+      renderSelectedZat();
+    }
+    function hapusZat(index) { SoundManager.playClick(); selectedZatList.splice(index, 1); renderSelectedZat(); }
+    function renderSelectedZat() {
+      const container = document.getElementById('zat-terpilih');
+      if (!container) return;
+      if (selectedZatList.length === 0) { container.innerHTML = ''; return; }
+      container.innerHTML = selectedZatList.map((zat, idx) => `<div class="bg-white p-3 rounded-lg border-2 border-emerald-200 shadow-sm flex flex-col gap-1"><div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="font-bold text-emerald-700">${zat.nama}</div>${zat.kode ? `<span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-200">${zat.kode}</span>` : ''}</div><button type="button" onclick="hapusZat(${idx})" class="text-red-400 hover:text-red-600 font-bold text-xl leading-none">×</button></div><div class="text-xs text-gray-600 bg-gray-50 p-2 rounded"><div><span class="font-semibold text-gray-800">Kategori:</span> ${zat.kategori}</div><div><span class="font-semibold text-gray-800">Fungsi:</span> ${zat.fungsi}</div></div></div>`).join('');
+    }
+    async function handleInvestigasiSubmit(e) {
+      e.preventDefault(); SoundManager.playClick();
+      if (investigasiData.length >= 999) { alert('Maksimum 999 data.'); return; }
+      if (selectedZatList.length === 0) { alert('Silakan tambahkan zat!'); return; }
+      const tipe = document.getElementById('tipe_investigasi').value;
+      const formData = { id: Date.now().toString(), kelompok: document.getElementById('kelompok').value, nama_produk: document.getElementById('nama_produk').value, jenis_produk: document.getElementById('jenis_produk').value, tipe_investigasi: tipe, zat_ditemukan: JSON.stringify(selectedZatList), kategori_zat: selectedZatList.map(z => z.kategori).join(', '), fungsi_zat: selectedZatList.map(z => `${z.nama}: ${z.fungsi}`).join(' | '), timestamp: new Date().toISOString() };
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...';
+      const result = await window.dataSdk.create(formData);
+      submitBtn.disabled = false; submitBtn.innerHTML = '💾 Simpan Data';
+      if (result.isOk) { e.target.reset(); selectedZatList = []; renderSelectedZat(); } else { alert('Gagal menyimpan.'); }
+    }
+    function renderDataTable() {
+      const tableDiv = document.getElementById('data-table');
+      if (!tableDiv) return;
+      const filteredData = investigasiData.filter(d => {
+          if (investigasiTab === 'aditif') return d.tipe_investigasi !== 'adiktif';
+          return d.tipe_investigasi === 'adiktif';
+      });
+      if (filteredData.length === 0) { tableDiv.innerHTML = '<p class="text-center text-gray-500 py-8 italic">Belum ada data untuk kategori ini.</p>'; return; }
+      const borderColor = investigasiTab === 'aditif' ? 'border-green-500' : 'border-red-500';
+      const titleColor = investigasiTab === 'aditif' ? 'text-green-700' : 'text-red-700';
+      tableDiv.innerHTML = `<div class="space-y-3">${filteredData.map(data => {
+            let zatList = []; try { zatList = JSON.parse(data.zat_ditemukan); } catch (e) { zatList = [{ nama: data.zat_ditemukan, kategori: data.kategori_zat, fungsi: data.fungsi_zat, kode: '-' }]; }
+            return `<div class="bg-white p-4 rounded-xl shadow border-l-4 ${borderColor} hover:shadow-md transition"><div class="flex justify-between items-start mb-2"><div class="font-bold text-lg ${titleColor}">${data.nama_produk}</div><button onclick="deleteData('${data.id}')" class="text-red-400 hover:text-red-600 font-bold p-1 rounded hover:bg-red-50">🗑️</button></div><div class="text-sm space-y-1"><div><span class="font-bold text-gray-700">Kelompok:</span> ${data.kelompok}</div><div><span class="font-bold text-gray-700">Jenis:</span> ${data.jenis_produk}</div><div class="mt-2"><span class="font-bold text-gray-700">Zat yang Ditemukan:</span><div class="ml-2 mt-1 space-y-2">${zatList.map(z => `<div class="text-xs bg-yellow-50 p-2 rounded border border-yellow-100"><div class="flex items-center gap-2"><div class="font-bold text-yellow-700">★ ${z.nama}</div>${z.kode && z.kode !== '-' ? `<span class="text-xs bg-orange-400 text-white px-2 py-0.5 rounded-full font-bold">${z.kode}</span>` : ''}</div><div class="text-gray-600 mt-1">Kategori: ${z.kategori}</div></div>`).join('')}</div></div></div></div>`;
+          }).join('')}</div>`;
+    }
+    async function deleteData(id) { SoundManager.playClick(); const dataToDelete = investigasiData.find(d => d.id === id); if (!dataToDelete) return; const result = await window.dataSdk.delete(dataToDelete); if (!result.isOk) { alert('Gagal menghapus data.'); } }
+
+    function downloadLKPD() {
+      SoundManager.playClick();
+      if (investigasiData.length === 0) { alert('Belum ada data untuk didownload!'); return; }
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth(); const pageHeight = doc.internal.pageSize.getHeight(); const margin = 15; let yPos = 20;
+      doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("LEMBAR KERJA PESERTA DIDIK (LKPD)", pageWidth / 2, yPos, { align: "center" }); yPos += 7;
+      doc.setFontSize(14); doc.text("Investigasi Zat Aditif dan Adiktif", pageWidth / 2, yPos, { align: "center" }); yPos += 15;
+      const grouped = investigasiData.reduce((acc, data) => {
+        const tipe = data.tipe_investigasi === 'adiktif' ? 'Zat Adiktif' : 'Zat Aditif';
+        if (!acc[tipe]) acc[tipe] = {}; if (!acc[tipe][data.kelompok]) acc[tipe][data.kelompok] = [];
+        acc[tipe][data.kelompok].push(data); return acc;
+      }, {});
+      Object.keys(grouped).forEach(tipe => {
+          if (yPos > pageHeight - 30) { doc.addPage(); yPos = 20; }
+          doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(tipe === 'Zat Adiktif' ? 200 : 0, 0, 0); doc.text(`--- ${tipe} ---`, margin, yPos); doc.setTextColor(0, 0, 0); yPos += 10;
+          const groups = grouped[tipe];
+          Object.keys(groups).forEach(kelompok => {
+            if (yPos > pageHeight - 30) { doc.addPage(); yPos = 20; }
+            doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setFillColor(220, 220, 220); doc.rect(margin, yPos - 5, pageWidth - (margin * 2), 8, 'F'); doc.text(kelompok, margin + 2, yPos); yPos += 10;
+            groups[kelompok].forEach((data, idx) => {
+              if (yPos > pageHeight - 40) { doc.addPage(); yPos = 20; }
+              doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.text(`${idx + 1}. Produk: ${data.nama_produk}`, margin + 5, yPos); yPos += 6;
+              doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(`Jenis: ${data.jenis_produk}`, margin + 10, yPos); yPos += 6;
+              let zatList = []; try { zatList = JSON.parse(data.zat_ditemukan); } catch (e) { zatList = [{ nama: data.zat_ditemukan, kategori: data.kategori_zat, fungsi: data.fungsi_zat, kode: '-' }]; }
+              doc.text("Zat yang ditemukan:", margin + 10, yPos); yPos += 5;
+              zatList.forEach((zat) => {
+                 if (yPos > pageHeight - 20) { doc.addPage(); yPos = 20; }
+                 const bullet = `• ${zat.nama} (${zat.kategori})`; doc.text(bullet, margin + 15, yPos); yPos += 5;
+                 const fungsiText = `Fungsi: ${zat.fungsi}`; const splitFungsi = doc.splitTextToSize(fungsiText, pageWidth - margin - 25);
+                 doc.setTextColor(100, 100, 100); doc.text(splitFungsi, margin + 20, yPos); doc.setTextColor(0, 0, 0); yPos += (splitFungsi.length * 5) + 2; 
+              }); yPos += 4; 
+            }); yPos += 8; 
+          }); yPos += 10;
+      });
+      const date = new Date().toLocaleDateString('id-ID'); doc.setFontSize(9); doc.setTextColor(128, 128, 128); doc.text(`Dicetak pada: ${date}`, margin, pageHeight - 10); doc.save("LKPD_Zat_Aditif_Adiktif.pdf");
+    }
+
+    function renderTicTacToe() {
+      currentStage = 'tictactoe';
+      initializeTicTacBoard();
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full p-8">
+          <div class="max-w-5xl mx-auto">
+            <button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary mb-6 px-6 py-3 text-white rounded-full font-bold shadow-lg">← Kembali ke Menu</button>
+            <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-green-200">
+              <h2 class="text-3xl font-bold text-center mb-6 text-green-700">🎮 Tic Tac Toe - Uji Pemahaman</h2>
+              <div class="bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-300"><p class="text-center font-bold text-yellow-800">⚡ Jawab pertanyaan dengan benar untuk merebut kotak! ⚡</p></div>
+              <div class="flex justify-center gap-8 mb-6">
+                <div class="bg-green-100 px-8 py-4 rounded-2xl shadow-md border-b-4 border-green-400"><span class="font-bold text-green-800 text-xl">Pemain X: ${ticTacScore.X}</span></div>
+                <div class="bg-yellow-100 px-8 py-4 rounded-2xl shadow-md border-b-4 border-yellow-400"><span class="font-bold text-yellow-800 text-xl">Pemain O: ${ticTacScore.O}</span></div>
+              </div>
+              <div id="current-player" class="text-center text-2xl font-bold mb-4 bg-white inline-block px-6 py-2 rounded-full shadow-md mx-auto block w-max border-2 border-gray-100">Giliran: <span class="${currentPlayer === 'X' ? 'text-green-600' : 'text-yellow-600'}">${currentPlayer}</span></div>
+              <div id="tic-tac-board" class="grid grid-cols-5 gap-3 max-w-2xl mx-auto mb-6 bg-green-50 p-4 rounded-2xl border-2 border-green-100"></div>
+              <div id="question-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4"><div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div><div id="question-panel" class="relative bg-gradient-to-br from-green-50 to-yellow-50 p-8 rounded-2xl shadow-xl border-4 border-green-200 w-full max-w-lg transform transition-all scale-100"><h3 class="font-bold text-xl mb-4 text-center" id="question-text"></h3><div id="options-panel" class="space-y-3"></div></div></div>
+              <div class="text-center mt-6"><button onclick="resetTicTacToe()" class="bg-gray-500 hover:bg-gray-600 px-8 py-3 text-white rounded-full font-bold shadow-lg border-b-4 border-gray-700">🔄 Reset Game</button></div>
+            </div>
+          </div>
+        </div>
+      `;
+      renderTicTacBoard();
+    }
+
+    function initializeTicTacBoard() {
+      function deepCopySoal(soal) { return { pertanyaan: String(soal.pertanyaan), jawaban: String(soal.jawaban), pilihan: soal.pilihan.map(p => String(p)) }; }
+      const soal25 = []; let soalIndex = 0;
+      for (let i = 0; i < 25; i++) { soal25.push(deepCopySoal(soalTicTacToe[soalIndex % soalTicTacToe.length])); soalIndex++; }
+      for (let i = soal25.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [soal25[i], soal25[j]] = [soal25[j], soal25[i]]; }
+      ticTacBoard = []; for (let i = 0; i < 25; i++) { ticTacBoard.push({ id: i, value: null, question: soal25[i], answered: false }); }
+      currentPlayer = 'X'; gameOver = false;
+    }
+
+    function renderTicTacBoard() {
+      const boardDiv = document.getElementById('tic-tac-board'); if (!boardDiv) return;
+      boardDiv.innerHTML = ticTacBoard.map(cell => {
+        let bgColor = 'bg-white'; let content = '';
+        if (cell.value === 'X') { bgColor = 'bg-green-100 border-green-400 shadow-sm'; content = '<span class="text-4xl font-black text-green-600 drop-shadow-sm">X</span>'; }
+        else if (cell.value === 'O') { bgColor = 'bg-yellow-100 border-yellow-400 shadow-sm'; content = '<span class="text-4xl font-black text-yellow-600 drop-shadow-sm">O</span>'; }
+        else { const row = Math.floor(cell.id / 5); const col = (cell.id % 5); const rowLetter = String.fromCharCode(65 + row); const colNumber = col + 1; content = `<span class="text-sm font-bold text-gray-300 group-hover:text-green-400 transition-colors">${rowLetter}${colNumber}</span>`; }
+        const borderClass = (cell.value) ? 'border-4' : 'border-2 border-gray-200 hover:border-green-300';
+        return `<div class="tic-tac-cell group ${bgColor} ${borderClass} ${cell.answered ? 'answered' : ''} h-20 flex items-center justify-center rounded-xl cursor-pointer relative overflow-hidden transition-all duration-200" onclick="selectCell(${cell.id})" ${cell.answered || gameOver ? 'style="pointer-events: none;"' : ''}>${content}</div>`;
+      }).join('');
+    }
+
+    function getWinner() {
+      const lines = [[0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], [0,6,12,18,24], [4,8,12,16,20]];
+      for (let line of lines) { const values = line.map(i => ticTacBoard[i].value); if (values[0] && values.every(v => v === values[0])) return values[0]; }
+      return null;
+    }
+
+    function selectCell(cellId) {
+      if (gameOver || ticTacBoard[cellId].answered) return; SoundManager.playClick(); selectedCell = cellId; const cell = ticTacBoard[cellId]; const question = cell.question;
+      if (!question || !question.pertanyaan) { alert('Error: Tidak ada soal!'); return; }
+      const modal = document.getElementById('question-modal'); const questionPanel = document.getElementById('question-panel');
+      questionPanel.innerHTML = `<h3 class="font-bold text-xl mb-4 text-center text-green-900" id="question-text"></h3><div id="options-panel" class="space-y-3"></div>`;
+      const questionText = document.getElementById('question-text'); const optionsPanel = document.getElementById('options-panel');
+      const row = Math.floor(cellId / 5); const col = (cellId % 5); const rowLetter = String.fromCharCode(65 + row); const colNumber = col + 1;
+      const playerTextColor = currentPlayer === 'X' ? 'text-green-700' : 'text-yellow-800'; const playerBgColor = currentPlayer === 'X' ? 'bg-green-100' : 'bg-yellow-100'; const playerBorderColor = currentPlayer === 'X' ? 'border-green-300' : 'border-yellow-300';
+      questionText.innerHTML = `<div class="flex items-center justify-center gap-3 mb-4"><span class="text-sm bg-white px-4 py-1 rounded-full font-bold border border-gray-200 text-gray-600">Kotak ${rowLetter}${colNumber}</span><span class="text-sm ${playerBgColor} ${playerTextColor} px-4 py-1 rounded-full font-bold border ${playerBorderColor} shadow-sm">Giliran ${currentPlayer}</span></div><div class="text-lg text-gray-800 leading-relaxed font-medium bg-white/50 p-4 rounded-xl border border-white">${question.pertanyaan}</div>`;
+      if (!question.pilihan || question.pilihan.length === 0) { optionsPanel.innerHTML = '<p class="text-red-500">Error: Pilihan jawaban tidak tersedia</p>'; modal.classList.remove('hidden'); return; }
+      optionsPanel.innerHTML = question.pilihan.map((pilihan, idx) => `<button onclick="answerQuestion('${pilihan.replace(/'/g, "\\'")}', ${cellId})" class="w-full p-4 bg-white hover:bg-green-50 border-2 border-green-100 hover:border-green-400 rounded-xl text-left font-semibold transition shadow-sm hover:shadow-md transform hover:-translate-y-1 group"><span class="font-bold text-green-600 mr-2 bg-green-100 w-8 h-8 inline-flex items-center justify-center rounded-full group-hover:bg-green-200 transition-colors">${String.fromCharCode(65 + idx)}</span> <span class="text-gray-700">${pilihan}</span></button>`).join('');
+      modal.classList.remove('hidden');
+    }
+
+    function answerQuestion(jawaban, cellId) {
+      const cell = ticTacBoard[cellId]; const question = cell.question; const isCorrect = jawaban === question.jawaban;
+      const modal = document.getElementById('question-modal'); const questionPanel = document.getElementById('question-panel');
+      const nextPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      const currentPlayerColorText = currentPlayer === 'X' ? 'text-green-700' : 'text-yellow-800';
+      const currentPlayerBg = currentPlayer === 'X' ? 'bg-green-100' : 'bg-yellow-100';
+      const nextPlayerColorText = nextPlayer === 'X' ? 'text-green-700' : 'text-yellow-800';
+
+      if (isCorrect) {
+        SoundManager.playCorrect(); cell.value = currentPlayer; cell.answered = true; ticTacScore[currentPlayer]++;
+        const winner = getWinner();
+        if (winner) {
+            SoundManager.playWin(); gameOver = true;
+            questionPanel.innerHTML = `<div class="text-center py-6"><div class="text-7xl mb-4 animate-bounce">🏆</div><p class="text-3xl font-black text-green-600 mb-2">Jawaban Benar!</p><p class="text-xl font-bold mt-4">DAN...</p><div class="bg-yellow-100 p-4 rounded-xl mt-2 border-4 border-yellow-400 shadow-lg"><p class="text-2xl font-black text-yellow-800">PEMAIN ${winner} MENANG!</p><p class="text-sm text-yellow-700">Berhasil menyusun 5 kotak!</p></div></div>`;
+            setTimeout(() => { modal.classList.add('hidden'); renderTicTacBoard(); alert(`🎉 SELAMAT! Pemain ${winner} Menang karena berhasil menyusun 5 kotak! 🎉`); }, 3000);
+        } else {
+            questionPanel.innerHTML = `<div class="text-center py-6"><div class="text-7xl mb-4 animate-bounce">🎉</div><p class="text-3xl font-black text-green-600 mb-2">Benar!</p><div class="bg-white/60 p-4 rounded-xl inline-block mt-2 border border-white"><p class="text-gray-600 text-sm mb-1">Jawaban:</p><p class="font-bold text-gray-800">${question.jawaban}</p></div><p class="mt-6 text-lg ${currentPlayerBg} p-3 rounded-xl inline-block ${currentPlayerColorText} font-bold border-2 border-transparent shadow-sm">Pemain ${currentPlayer} menguasai kotak ini!</p></div>`;
+            if (ticTacBoard.every(c => c.answered)) {
+                 gameOver = true;
+                 setTimeout(() => { modal.classList.add('hidden'); renderTicTacBoard(); const scoreWinner = ticTacScore.X > ticTacScore.O ? 'X' : ticTacScore.O > ticTacScore.X ? 'O' : 'Seri'; alert(`🤝 Permainan Selesai! Pemenang berdasarkan skor: ${scoreWinner}`); }, 2000);
+            } else {
+                setTimeout(() => { currentPlayer = nextPlayer; const currentPlayerDiv = document.getElementById('current-player'); if (currentPlayerDiv) { const colorClass = nextPlayer === 'X' ? 'text-green-600' : 'text-yellow-600'; currentPlayerDiv.innerHTML = `Giliran: <span class="${colorClass}">${currentPlayer}</span>`; } modal.classList.add('hidden'); renderTicTacBoard(); }, 2000);
+            }
+        }
+      } else {
+        SoundManager.playWrong();
+        questionPanel.innerHTML = `<div class="text-center py-6"><div class="text-7xl mb-4 animate-pulse">❌</div><p class="text-3xl font-black text-red-500 mb-2">Salah!</p><p class="text-gray-600 mt-2">Kesempatan menjawab hangus.</p><p class="mt-6 text-lg text-gray-600 font-medium">Giliran beralih ke pemain <span class="font-bold ${nextPlayerColorText}">${nextPlayer}</span></p></div>`;
+        setTimeout(() => { currentPlayer = nextPlayer; const currentPlayerDiv = document.getElementById('current-player'); if (currentPlayerDiv) { const colorClass = nextPlayer === 'X' ? 'text-green-600' : 'text-yellow-600'; currentPlayerDiv.innerHTML = `Giliran: <span class="${colorClass}">${currentPlayer}</span>`; } modal.classList.add('hidden'); }, 2500);
+      }
+    }
+
+    function resetTicTacToe() { SoundManager.playClick(); ticTacScore = { X: 0, O: 0 }; renderTicTacToe(); }
+
+    function renderRefleksi() {
+      currentStage = 'refleksi';
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full p-8">
+          <div class="max-w-4xl mx-auto">
+            <button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary mb-6 px-6 py-3 text-white rounded-full font-bold shadow-lg">← Kembali ke Menu</button>
+            <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-orange-200">
+              <h2 class="text-3xl font-bold text-center mb-6 text-orange-600">📝 Refleksi Pembelajaran</h2>
+              <form id="refleksi-form" class="space-y-6">
+                <div><label for="nama_siswa" class="block font-semibold mb-2 text-lg text-orange-900">Nama Siswa:</label><input type="text" id="nama_siswa" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" required></div>
+                <div><label for="kelompok_siswa" class="block font-semibold mb-2 text-lg text-orange-900">Kelompok:</label><select id="kelompok_siswa" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" required><option value="">Pilih Kelompok</option><option value="Kelompok 1">Kelompok 1</option><option value="Kelompok 2">Kelompok 2</option><option value="Kelompok 3">Kelompok 3</option></select></div>
+                <div><label for="pemahaman" class="block font-semibold mb-2 text-lg text-orange-900">1. Apa yang kamu pahami tentang zat aditif dan adiktif?</label><textarea id="pemahaman" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan pemahamanmu..." required></textarea></div>
+                <div><label for="manfaat" class="block font-semibold mb-2 text-lg text-orange-900">2. Apa manfaat yang kamu dapat dari pembelajaran hari ini?</label><textarea id="manfaat" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan manfaat yang kamu rasakan..." required></textarea></div>
+                <div><label for="penerapan" class="block font-semibold mb-2 text-lg text-orange-900">3. Bagaimana kamu akan menerapkan pengetahuan ini dalam kehidupan sehari-hari?</label><textarea id="penerapan" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan rencana penerapanmu..." required></textarea></div>
+                <div><label for="kesulitan" class="block font-semibold mb-2 text-lg text-orange-900">4. Apa kesulitan yang kamu hadapi selama pembelajaran?</label><textarea id="kesulitan" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan kesulitanmu..." required></textarea></div>
+                <div><label for="saran" class="block font-semibold mb-2 text-lg text-orange-900">5. Apa saran kamu untuk pembelajaran berikutnya?</label><textarea id="saran" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan saranmu..." required></textarea></div>
+                <div>
+                  <label class="block font-semibold mb-2 text-lg text-orange-900">6. Tingkat Kepuasan Pembelajaran:</label>
+                  <div class="flex justify-center gap-6 text-5xl p-4 bg-orange-50 rounded-2xl">
+                    <button type="button" onclick="setRating(1)" class="hover:scale-125 transition transform">😫</button><button type="button" onclick="setRating(2)" class="hover:scale-125 transition transform">☹️</button><button type="button" onclick="setRating(3)" class="hover:scale-125 transition transform">🙂</button><button type="button" onclick="setRating(4)" class="hover:scale-125 transition transform">😊</button><button type="button" onclick="setRating(5)" class="hover:scale-125 transition transform">🤩</button>
+                  </div>
+                  <input type="hidden" id="rating" required><p id="rating-text" class="text-center mt-3 font-bold text-xl text-orange-600"></p>
+                </div>
+                <button type="submit" class="secondary-btn btn-gradient-secondary w-full py-4 text-white rounded-xl text-xl font-bold shadow-lg transform active:scale-95 transition">💾 Simpan Refleksi</button>
+              </form>
+              <button onclick="downloadRefleksi()" class="accent-btn btn-gradient-accent w-full mt-4 py-4 text-white rounded-xl text-xl font-bold shadow-lg transform active:scale-95 transition">📥 Download Refleksi (PDF)</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('refleksi-form').addEventListener('submit', handleRefleksiSubmit);
+    }
+
+    function setRating(value) { SoundManager.playClick(); document.getElementById('rating').value = value; document.getElementById('rating-text').textContent = ['Sangat Tidak Puas', 'Tidak Puas', 'Cukup', 'Puas', 'Sangat Puas'][value - 1]; }
+    function handleRefleksiSubmit(e) {
+      e.preventDefault(); SoundManager.playClick();
+      const formData = { nama: document.getElementById('nama_siswa').value, kelompok: document.getElementById('kelompok_siswa').value, pemahaman: document.getElementById('pemahaman').value, manfaat: document.getElementById('manfaat').value, penerapan: document.getElementById('penerapan').value, kesulitan: document.getElementById('kesulitan').value, saran: document.getElementById('saran').value, rating: document.getElementById('rating').value, timestamp: new Date().toLocaleString('id-ID') };
+      localStorage.setItem('refleksi_' + Date.now(), JSON.stringify(formData));
+      alert('✅ Refleksi berhasil disimpan!'); e.target.reset(); document.getElementById('rating-text').textContent = '';
+    }
+
+    function downloadRefleksi() {
+      SoundManager.playClick();
+      const refleksiKeys = Object.keys(localStorage).filter(key => key.startsWith('refleksi_'));
+      if (refleksiKeys.length === 0) { alert('Belum ada refleksi yang disimpan!'); return; }
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth(); const pageHeight = doc.internal.pageSize.getHeight(); const margin = 15; let yPos = 20;
+      doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("REFLEKSI PEMBELAJARAN", pageWidth / 2, yPos, { align: "center" }); yPos += 7;
+      doc.setFontSize(14); doc.text("Zat Aditif dan Adiktif", pageWidth / 2, yPos, { align: "center" }); yPos += 15;
+      refleksiKeys.forEach((key, idx) => {
+        const data = JSON.parse(localStorage.getItem(key));
+        if (yPos > pageHeight - 60) { doc.addPage(); yPos = 20; }
+        doc.setFillColor(240, 240, 240); doc.rect(margin, yPos - 5, pageWidth - (margin * 2), 20, 'F');
+        doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text(`Refleksi #${idx + 1}`, margin + 5, yPos); yPos += 6;
+        doc.setFontSize(10); doc.text(`Nama: ${data.nama}`, margin + 5, yPos); doc.text(`Waktu: ${data.timestamp}`, pageWidth - margin - 5, yPos, { align: 'right' }); yPos += 5;
+        doc.text(`Kelompok: ${data.kelompok}`, margin + 5, yPos); doc.text(`Rating: ${data.rating}/5`, pageWidth - margin - 5, yPos, { align: 'right' }); yPos += 10;
+        doc.setFont("helvetica", "normal");
+        const questions = [{ q: "1. Pemahaman", a: data.pemahaman }, { q: "2. Manfaat", a: data.manfaat }, { q: "3. Penerapan", a: data.penerapan }, { q: "4. Kesulitan", a: data.kesulitan }, { q: "5. Saran", a: data.saran }];
+        questions.forEach(item => {
+             if (yPos > pageHeight - 20) { doc.addPage(); yPos = 20; }
+             doc.setFont("helvetica", "bold"); doc.text(item.q, margin + 5, yPos); yPos += 5;
+             doc.setFont("helvetica", "normal"); const splitText = doc.splitTextToSize(item.a, pageWidth - (margin * 2) - 10); doc.text(splitText, margin + 10, yPos); yPos += (splitText.length * 5) + 3;
+        });
+        yPos += 5;
+      });
+      doc.save("Refleksi_Pembelajaran.pdf");
+    }
+
+    function renderAsesmen() {
+        currentStage = 'asesmen';
+        if (asesmenAnswers.length === 0) { asesmenCurrentSoal = 0; asesmenScore = 0; }
+        const currentQ = bankSoalAsesmen[asesmenCurrentSoal];
+        const progress = ((asesmenCurrentSoal) / bankSoalAsesmen.length) * 100;
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="min-h-full p-8">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-6"><button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary px-6 py-2 text-white rounded-full font-bold shadow-lg text-sm">← Menu</button><div class="text-xl font-bold text-gray-700 bg-white px-4 py-2 rounded-lg shadow">Soal ${asesmenCurrentSoal + 1} / ${bankSoalAsesmen.length}</div></div>
+                    <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-red-200">
+                        <div class="w-full bg-gray-200 rounded-full h-4 mb-8"><div class="bg-gradient-to-r from-red-400 to-pink-500 h-4 rounded-full transition-all duration-500" style="width: ${progress}%"></div></div>
+                        <div class="mb-8"><h2 class="text-2xl font-bold text-gray-800 leading-relaxed">${currentQ.tanya}</h2></div>
+                        <div class="space-y-4">${currentQ.opsi.map((opsi, idx) => `<button onclick="handleAsesmenAnswer(${idx})" class="w-full text-left p-5 rounded-xl border-2 border-gray-200 hover:border-red-400 hover:bg-red-50 transition-all duration-200 text-lg font-medium text-gray-700 group"><span class="inline-block w-8 h-8 bg-gray-200 text-gray-600 rounded-full text-center leading-8 mr-3 font-bold group-hover:bg-red-500 group-hover:text-white transition">${String.fromCharCode(65 + idx)}</span>${opsi}</button>`).join('')}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function handleAsesmenAnswer(selectedIndex) {
+        const currentQ = bankSoalAsesmen[asesmenCurrentSoal];
+        const isCorrect = selectedIndex === currentQ.kunci;
+        asesmenAnswers.push({ soal: currentQ.tanya, jawaban: selectedIndex, kunci: currentQ.kunci, benar: isCorrect });
+        if (isCorrect) { asesmenScore += (100 / bankSoalAsesmen.length); SoundManager.playCorrect(); } else { SoundManager.playWrong(); }
+        const buttons = document.querySelectorAll('.space-y-4 button');
+        buttons[selectedIndex].classList.remove('hover:bg-red-50', 'border-gray-200');
+        buttons[selectedIndex].classList.add(isCorrect ? 'bg-green-100' : 'bg-red-100', isCorrect ? 'border-green-500' : 'border-red-500');
+        if (!isCorrect) { buttons[currentQ.kunci].classList.add('bg-green-100', 'border-green-500'); }
+        setTimeout(() => {
+            asesmenCurrentSoal++;
+            if (asesmenCurrentSoal < bankSoalAsesmen.length) { renderAsesmen(); } else { renderAsesmenResult(); }
+        }, 1500);
+    }
+
+    function renderAsesmenResult() {
+        const finalScore = Math.round(asesmenScore);
+        let feedback = ""; let emoji = ""; let color = "";
+        if (finalScore >= 90) { feedback = "Luar Biasa! Kamu ahli analisis!"; emoji = "🏆"; color = "text-green-600"; }
+        else if (finalScore >= 75) { feedback = "Hebat! Pemahamanmu sangat baik."; emoji = "🌟"; color = "text-blue-600"; }
+        else if (finalScore >= 60) { feedback = "Cukup Baik, tingkatkan lagi ya."; emoji = "👍"; color = "text-yellow-600"; }
+        else { feedback = "Belajar lagi yuk di materi & investigasi!"; emoji = "📚"; color = "text-red-600"; }
+        if (finalScore >= 75) SoundManager.playWin();
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="min-h-full p-8 flex items-center justify-center">
+                <div class="max-w-2xl w-full bg-white/95 backdrop-blur rounded-3xl p-10 shadow-2xl border-4 border-purple-200 text-center fade-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Hasil Asesmen Formatif</h2>
+                    <div class="text-9xl mb-6 animate-bounce">${emoji}</div>
+                    <div class="text-6xl font-black ${color} mb-4">${finalScore}</div>
+                    <p class="text-2xl font-bold text-gray-700 mb-8">${feedback}</p>
+                    <div class="grid grid-cols-2 gap-4 mb-8 text-left bg-gray-50 p-6 rounded-xl">
+                        <div><p class="text-sm text-gray-500">Jumlah Soal</p><p class="text-xl font-bold text-gray-800">${bankSoalAsesmen.length}</p></div>
+                        <div><p class="text-sm text-gray-500">Jawaban Benar</p><p class="text-xl font-bold text-green-600">${asesmenAnswers.filter(a => a.benar).length}</p></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="asesmenAnswers=[]; renderAsesmen()" class="px-8 py-3 bg-blue-500 text-white rounded-full font-bold shadow-lg hover:bg-blue-600 transition">🔄 Coba Lagi</button>
+                        <button onclick="goToStage('menu')" class="px-8 py-3 bg-gray-500 text-white rounded-full font-bold shadow-lg hover:bg-gray-600 transition">🏠 Ke Menu</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function goToStage(stage) {
+      SoundManager.playClick();
+      switch(stage) {
+        case 'menu': renderMenu(); break;
+        case 'materi': renderMateri(); break;
+        case 'icebreaking': renderIceBreaking(); break;
+        case 'investigasi': renderInvestigasi(); break;
+        case 'tictactoe': renderTicTacToe(); break;
+        case 'refleksi': renderRefleksi(); break;
+        case 'asesmen': renderAsesmen(); break;
+      }
+    }
+
+    initApp();
+  </script>
+ </body>
+</html>
